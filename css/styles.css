@@ -1,0 +1,7 @@
+.leaflet-popup-content {
+  margin: 10px 14px;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}

@@ -1,0 +1,46 @@
+<section class="flex flex-col h-full">
+  <h1 class="text-3xl font-semibold p-4">Rentify</h1>
+
+  <div class="flex-1 relative">
+    <!-- mapa -->
+    <div id="map" class="w-full h-full z-0"></div>
+
+    <!-- sucursal seleccionada -->
+    <div
+      id="branch-info"
+      class="hidden flex-col gap-1 absolute bottom-2 left-2 right-2 text-stone-800 dark:text-neutral-300 bg-red-500 dark:bg-stone-900 text-white px-4 pb-4 pt-2 rounded shadow-lg z-10"
+    >
+      <div class="flex flex-row justify-between items-center">
+        <h1 id="branch-name" class="text-2xl font-semibold"></h1>
+        <button
+          id="branch-deselect-btn"
+          class="hover:text-white cursor-pointer"
+        >
+          <i class="text-xl fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="flex gap-2 items-center">
+        <i class="fa-solid fa-location-dot"></i>
+        <h1 id="branch-location">Direccion</h1>
+      </div>
+
+      <div class="flex gap-2 items-center">
+        <i class="fa-solid fa-location-arrow"></i>
+        <h1 id="branch-location-reference">Descripcion</h1>
+      </div>
+
+      <div class="flex gap-2 items-center">
+        <i class="fa-solid fa-car"></i>
+        <h1 id="branch-vehicles">0 Vehiculos disponibles</h1>
+      </div>
+
+      <button
+        id="branch-select-btn"
+        class="p-2 mt-2 bg-red-500 hover:bg-red-600 rounded shadow-lg cursor-pointer page-link"
+      >
+        Seleccionar Sucursal
+      </button>
+    </div>
+  </div>
+</section>

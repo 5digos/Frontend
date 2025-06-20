@@ -1,0 +1,144 @@
+<section class="flex flex-col h-full">
+  <div class="flex flex-row justify-between items-center">
+    <h1 class="text-3xl font-semibold p-4">Reservacion</h1>
+    <button id="cancel-reservation-btn" class="hover:text-white cursor-pointer">
+      <i class="text-2xl fa-solid fa-xmark pr-4"></i>
+    </button>
+  </div>
+
+  <form id="reservation-form" class="mx-4 text-stone-800 dark:text-neutral-200">
+    <!-- campos obligatorios -->
+    <section
+      class="flex flex-col gap-1 bg-neutral-200 dark:bg-stone-800 p-4 rounded"
+    >
+      <h1 class="text-2xl font-semibold">Reserva</h1>
+      <h1 class="text-xl mb-1 text-stone-700 dark:text-neutral-400">
+        Campos Obligatorios
+      </h1>
+
+      <label for="fechaInicio" class="text-xl">Fecha Inicio</label>
+      <div class="flex gap-2">
+        <input
+          type="date"
+          id="fechaInicio"
+          name="fechaInicio"
+          required
+          class="w-2/3 text-lg border border-neutral-300 rounded-md px-3 py-2 focus:outline-none focus:border-red-400 hover:border-neutral-300 transition duration-300"
+        />
+        <select
+          id="horaInicio"
+          name="horaInicio"
+          required
+          class="w-1/3 border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
+        >
+          <option value="" disabled selected>Hora</option>
+          <!-- las opciones se llenan por JS -->
+        </select>
+      </div>
+
+      <label for="fechaDevolucion" class="text-xl mt-2"
+        >Fecha de Devolución</label
+      >
+      <div class="flex gap-2">
+        <input
+          type="date"
+          id="fechaDevolucion"
+          name="fechaDevolucion"
+          required
+          class="w-2/3 text-lg border border-neutral-300 rounded-md px-3 py-2 focus:outline-none focus:border-red-400 hover:border-neutral-300 transition duration-300"
+        />
+        <select
+          id="horaDevolucion"
+          name="horaDevolucion"
+          required
+          class="w-1/3 border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
+        >
+          <option value="" disabled selected>Hora</option>
+          <!-- las opciones se llenan por JS -->
+        </select>
+      </div>
+
+      <label for="branch" class="block text-xl mt-2">Sucursal Destino</label>
+      <select
+        id="branch"
+        name="branch"
+        required
+        class="text-lg border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
+      ></select>
+    </section>
+
+    <!-- filtros opcionales -->
+    <section
+      class="flex flex-col gap-1 bg-neutral-200 dark:bg-stone-800 p-4 mt-3 rounded"
+    >
+      <h1 class="text-2xl font-semibold">Vehiculo</h1>
+      <h1 class="text-xl mb-1 text-stone-700 dark:text-neutral-400">
+        Filtros Opcionales
+      </h1>
+      <div class="flex gap-2">
+        <div class="w-3/5 gap-2">
+          <label for="category" class="block text-xl">Categoria</label>
+          <select
+            id="category"
+            name="category"
+            class="w-full text-lg border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
+          ></select>
+        </div>
+        <div class="w-2/5 gap-2">
+          <label for="seatingCapacity" class="block text-xl">Asientos</label>
+          <select
+            id="seatingCapacity"
+            name="seatingCapacity"
+            class="w-full text-lg border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
+          >
+            <option value="" selected>Cualquiera</option>
+            <option value="2">2</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <div class="w-3/5 gap-2">
+          <label for="transmission" class="block text-xl mt-2"
+            >Transmision</label
+          >
+          <select
+            id="transmission"
+            name="transmission"
+            class="text-lg w-full border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
+          ></select>
+        </div>
+
+        <div class="w-2/5 gap-2">
+          <label for="maxPrice" class="block text-xl mt-2">Precio Max</label>
+          <div class="relative">
+            <span
+              class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400 pointer-events-none"
+            >
+              $
+            </span>
+            <input
+              type="number"
+              id="maxPrice"
+              name="maxPrice"
+              min="0"
+              step="1"
+              placeholder="0"
+              class="text-lg w-full border border-neutral-300 rounded-md px-8 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer w-full"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <button
+      type="submit"
+      class="w-full p-2 mt-3 bg-red-500 hover:bg-red-600 rounded shadow-lg cursor-pointer"
+    >
+      Buscar
+    </button>
+  </form>
+</section>

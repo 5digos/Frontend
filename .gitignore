@@ -1,0 +1,52 @@
+# Ignorar carpetas de configuración de VS Code
+.vscode/
+
+# Ignorar archivos de entorno
+.env
+*.env
+
+# Ignorar carpetas de construcción y dependencias
+node_modules/
+dist/
+build/
+
+# Ignorar archivos de logs
+*.log
+
+# Ignorar archivos temporales del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos de salida de compiladores y editores
+*.class
+*.pyc
+*.out
+*.exe
+
+# Logs específicos de npm/yarn
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Directorios de cobertura de tests (si en el futuro usas Jest, Mocha, etc.)
+coverage/
+.nyc_output/
+
+# Cachés de bundlers/transpiladores
+.cache/
+.parcel-cache/
+.vite/
+.sass-cache/
+
+# Archivos de lock locales de entorno (si usas CRA u otros frameworks)
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Metadatos de IDEs JetBrains (WebStorm, PhpStorm…)
+.idea/
+
+# Otros temporales que salen en Windows o Linux
+*.tmp
+*.swp
