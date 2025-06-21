@@ -4,13 +4,18 @@ import { setupAuthTabs } from "./auth-tabs.js";
 let isAuthenticated = false; // false aparece el login, true aparece el home
 
 // cargar la app
-document.addEventListener("DOMContentLoaded", () => {
-  if (!isAuthenticated) {
-    loadLoginView();
-  } else {
-    initializeApp();
-  }
+document.addEventListener("DOMContentLoaded", () => {  
+    initializeApp();  
 });
+
+// document.addEventListener("DOMContentLoaded", () => {
+//   if (!isAuthenticated) {
+//     loadLoginView();
+//   } else {
+//     initializeApp();
+//   }
+// });
+
 
 // login/register
 function loadLoginView() {

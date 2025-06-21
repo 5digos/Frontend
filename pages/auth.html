@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rentify</title>
+    <!-- <link rel="icon" href="/img/favicon.ico" type="image/x-icon"> -->
+    <link rel="icon" href="../img/rentifylogo.png" type="image/png" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="../css/output.css">
+    <link rel="stylesheet" href="../css/styles2.css">
+</head>
+<body class="flex justify-center items-center h-screen bg-palette-tertiary-color font-poppins overflow-y-auto overflow-x-hidden">
+
+    <div class="flex w-screen h-screen">
+        <!-- Sección de imagen -->
+        <!-- <div class="w-1/2 h-full">
+            <img src="../img/ball.jpg" alt="Soccer Field" class="w-full h-full object-cover">
+        </div> -->
+
+        <!-- Formulario de Inicio de Sesión -->
+
+        <!-- Formulario de Registro -->
+        <div class="w-full h-full flex flex-col justify-center items-center bg-primarydark px-6 py-4">
+
+            <div class="mb-10">
+                <img src="../img/rentifylogo.png" class="h-40 mb-10" alt="">
+            </div>
+
+            <div id="loginForm" class="text-center w-full max-w-sm">
+                <h2 class="text-white text-2xl font-semibold mb-5">Iniciar sesión</h2>
+                <div class="form-container flex flex-col items-center">
+                    <label for="loginEmail" class="text-white text-left w-full mb-1 font-medium">Email *</label>
+                    <input type="text" id="loginEmail" placeholder="Ingresa tu Email acá" required autocomplete="username"
+                           class="w-full p-3 mb-4 bg-palette-secundary-color text-white rounded-md focus:outline-none">
+    
+                    <label for="loginPassword" class="text-white text-left w-full mb-1 font-medium">Contraseña *</label>
+                    <div class="relative w-full mb-4">
+                        <input type="password" id="loginPassword" placeholder="Ingresa tu Contraseña acá" required autocomplete="current-password"
+                               class="w-full p-3 pr-12 bg-palette-secundary-color text-white rounded-md focus:outline-none">
+                        <span id="togglePassword" class="absolute right-0 top-1/2 transform -translate-y-1/2 pr-3 flex items-center cursor-pointer">
+                            <span id="eyeIcon" class="material-icons text-white text-xl">visibility</span>
+                            <span id="eyeOffIcon" class="material-icons text-white text-xl hidden">visibility_off</span>
+                        </span>
+                    </div>
+    
+                    <button type="submit" class="w-full p-3 mt-6 text-lg font-semibold rounded-md bg-palette-primary-color text-palette-accent-color ">
+                        Iniciar sesión
+                    </button>
+                    <p class="text-white text-sm mt-4">¿Necesitas una cuenta? <a class="text-palette-primary-color  cursor-pointer">Regístrate acá</a></p>
+                    <p class="text-white text-sm mt-4">¿Olvidaste tu contraseña? <a id="resetPassword" class="text-palette-primary-color cursor-pointer">Reestablecela acá</a></p>
+                </div>
+            </div>
+            
+            <div id="registerForm" class="hidden text-center w-full max-w-sm">
+                <h2 class="text-white text-2xl font-semibold mb-5">Crea tu cuenta gratis</h2>
+                <div class="form-container flex flex-col items-center">
+                    <label for="username" class="text-white text-left w-full mb-1 font-medium">Nombre *</label>
+                    <input type="text" id="username" placeholder="Ingresa tu Nombre acá" required autocomplete="username"
+                           class="w-full p-3 mb-4 bg-palette-secundary-color text-white rounded-md focus:outline-none">
+                    
+                    <label for="userLastName" class="text-white text-left w-full mb-1 font-medium">Apellido *</label>
+                    <input type="text" id="userLastName" placeholder="Ingresa tu Apellido acá" required autocomplete="userLastName"
+                           class="w-full p-3 mb-4 bg-palette-secundary-color text-white rounded-md focus:outline-none">  
+                           
+                    <label for="dni" class="text-white text-left w-full mb-1 font-medium">DNI *</label>
+                    <input type="text" id="dni" placeholder="Ingresa tu DNI acá" 
+                           class="w-full p-3 mb-4 bg-palette-secundary-color text-white rounded-md focus:outline-none">
+
+                    <label for="email" class="text-white text-left w-full mb-1 font-medium">Email *</label>
+                    <input type="email" id="email" placeholder="Ingresa tu Email acá" required autocomplete="email"
+                           class="w-full p-3 mb-4 bg-palette-secundary-color text-white rounded-md focus:outline-none">
+
+                    <label for="password" class="text-white text-left w-full mb-1 font-medium">Contraseña *</label>
+                    <div class="relative w-full mb-4">
+                        <input type="password" id="password" placeholder="Ingresa tu Contraseña acá" required autocomplete="new-password"
+                               class="w-full p-3 pr-12 bg-palette-secundary-color text-white rounded-md focus:outline-none">
+                        <span id="togglePasswordReg" class="absolute right-0 top-1/2 transform -translate-y-1/2 pr-3 flex items-center cursor-pointer">
+                            <span id="eyeIconReg" class="material-icons text-white text-xl">visibility</span>
+                            <span id="eyeOffIconReg" class="material-icons text-white text-xl hidden">visibility_off</span>
+                        </span>
+                    </div>
+<div id="passwordRules" class="hidden text-left w-full mb-4">
+    <ul class="list-none space-y-1">
+        <li id="rule-length" class="text-sm text-red-500">❌ La contraseña debe tener al menos 8 caracteres</li>
+        <li id="rule-lower" class="text-sm text-red-500">❌ Debe contener al menos una letra minúscula</li>
+        <li id="rule-upper" class="text-sm text-red-500">❌ Debe contener al menos una letra mayúscula</li>
+        <li id="rule-digit" class="text-sm text-red-500">❌ Debe contener al menos un dígito</li>
+        <li id="rule-special" class="text-sm text-red-500">❌ Debe contener al menos un símbolo (@$!%*?&_)</li>
+    </ul>
+</div>
+
+                    <button type="submit" class="w-full p-3 mt-6 text-lg font-semibold rounded-md bg-palette-primary-color text-palette-accent-color ">
+                        Crear cuenta
+                    </button>
+                    <p class="text-white text-sm mt-4">¿Ya tienes una cuenta? <a class="text-palette-primary-color cursor-pointer">Ingresa acá</a></p>
+                </div>
+            </div>
+
+            
+
+            <div id="restoreForm" class="hidden text-center w-full max-w-sm">
+                <h2 class="text-white text-2xl font-semibold mb-5">Restablecer contraseña</h2>
+                <div class="form-container flex flex-col items-start w-full mb-6">
+                    <!-- Email -->
+                    <label for="restoreEmail" class="text-white text-left w-full mb-1 font-medium">Email *</label>
+                    <input type="email" id="restoreEmail" placeholder="Ingresa tu Email acá" class="w-full p-3 mb-4 bg-palette-secundary-color text-white rounded-md focus:outline-none">
+                </div>
+                <button id="restoreButton" type="button" class="w-full p-3 text-lg font-semibold rounded-md bg-palette-primary-color text-palette-accent-color ">Solicitar código</button>  
+            </div>
+            
+            <div id="validateResetForm" class="hidden text-center w-full max-w-sm">
+                <h2 class="text-white text-2xl font-semibold mb-5">Restablecer contraseña</h2>
+                <div class="form-container flex flex-col items-start w-full">
+                    <!-- Email -->
+                    <!-- Código de restablecimiento -->
+                    <label for="resetCode" class="text-white text-left w-full mb-1 font-medium">Código de restablecimiento</label>
+                    <input type="text" id="resetCode" placeholder="Ingresa el código de restablecimiento"
+                           class="w-full p-3 mb-4 bg-palette-secundary-color text-white rounded-md focus:outline-none" />
+                    
+                    <!-- Nueva contraseña -->
+                    <label for="newPassword" class="text-white text-left w-full mb-1 font-medium">Nueva contraseña</label>
+                    <div class="relative w-full mb-4">
+                        <input type="password" id="newPasswordReset" placeholder="Ingresa la nueva contraseña"
+                               class="w-full p-3 pr-12 bg-palette-secundary-color text-white rounded-md focus:outline-none" />
+                        <span id="togglePasswordReset" class="absolute right-0 top-1/2 transform -translate-y-1/2 pr-3 flex items-center cursor-pointer">
+                            <span id="eyeIconReset" class="material-icons text-white text-xl">visibility</span>
+                            <span id="eyeOffIconReset" class="material-icons text-white text-xl hidden">visibility_off</span>
+                        </span>
+                    </div>
+                    <div id="passwordRulesReset" class="hidden text-left w-full mb-4">
+                        <ul class="list-none space-y-1">
+                            <li id="rule-length-reset" class="text-sm text-red-500">❌ La contraseña debe tener al menos 8 caracteres</li>
+                            <li id="rule-lower-reset" class="text-sm text-red-500">❌ Debe contener al menos una letra minúscula</li>
+                            <li id="rule-upper-reset" class="text-sm text-red-500">❌ Debe contener al menos una letra mayúscula</li>
+                            <li id="rule-digit-reset" class="text-sm text-red-500">❌ Debe contener al menos un dígito</li>
+                            <li id="rule-special-reset" class="text-sm text-red-500">❌ Debe contener al menos un símbolo (@$!%*?&_)</li>
+                        </ul>
+                    </div>
+                    
+                    <label for="confirmNewPassword" class="text-white text-left w-full mb-1 font-medium">Confirmar nueva contraseña</label>
+                    <div class="relative w-full mb-4">
+                        <input type="password" id="confirmNewPasswordReset" placeholder="Confirme su nueva contraseña"
+                               class="w-full p-3 pr-12 bg-palette-secundary-color text-white rounded-md focus:outline-none" />
+                        <span id="togglePasswordConfirmReset" class="absolute right-0 top-1/2 transform -translate-y-1/2 pr-3 flex items-center cursor-pointer">
+                            <span id="eyeIconConfirmReset" class="material-icons text-white text-xl">visibility</span>
+                            <span id="eyeOffIconConfirmReset" class="material-icons text-white text-xl hidden">visibility_off</span>
+                        </span>
+                    </div>
+                    
+                    <!-- Botón -->
+                    <button id="ResetPasswordButton" type="button" class="w-full p-3 mt-6 text-lg font-semibold rounded-md bg-palette-primary-color text-palette-accent-color hover:bg-white">
+                        Restablecer contraseña
+                    </button>
+                    <p class="text-white text-sm mt-4">¿No recibiste el código? <a id="restoreAgain"  class="text-palette-primary-color text-center cursor-pointer">Solicítalo acá</a></p>
+                </div>
+            </div>
+            
+            <div id="validateEmailForm" class="hidden text-center w-full max-w-sm">
+                <h2 class="text-white text-2xl font-semibold mb-5">Verificar cuenta</h2>
+                <div class="form-container flex flex-col items-start w-full">
+                    <!-- Email -->
+                    <!-- Código de verificacion -->
+                    <label for="emailCode" class="text-white text-left w-full mb-1 font-medium">Código de verificacion</label>
+                    <input type="text" id="emailCode" placeholder="Ingresa el código de verificacion" class="w-full p-3 mb-4 bg-palette-secundary-color text-white rounded-md focus:outline-none" />
+                                       
+                    <!-- Botón -->
+                    <button id="validateEmailButton" type="button" class="w-full p-3 mt-6 text-lg font-semibold rounded-md bg-palette-primary-color text-palette-accent-color hover:bg-white">
+                        Confirmar cuenta
+                    </button>
+                    <p class="text-white text-sm mt-4">¿No recibiste el código? <a id="sendAgain"  class="text-palette-primary-color text-center cursor-pointer">Solicítalo acá</a></p>
+                </div>
+            </div>          
+        </div>
+    <script type="module" src="../js/views/authApp.js"></script>
+</body>
+</html>
