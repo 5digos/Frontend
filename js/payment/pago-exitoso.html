@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pago Exitoso</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../../img/rentifylogo.png" type="image/png" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/output.css">
+    <link rel="stylesheet" href="/css/styles2.css">
+</head>
+<body class="flex flex-col justify-center items-center min-h-screen bg-palette-tertiary-color font-poppins text-white p-6">
+
+    <img src="../../img/rentifylogo.png" class="h-32 mb-6" alt="Rentify logo">
+
+    <h1 class="text-3xl font-semibold mb-4">Procesando pago...</h1>
+    <p id="payment-result" class="text-lg text-center whitespace-pre-line max-w-xl bg-palette-secundary-color p-4 rounded-md shadow-lg">
+        Espere un momento...
+    </p>
+
+    <a href="./index-payment.html" class="mt-6 text-palette-primary-color underline hover:text-white transition">
+        Volver al inicio
+    </a>
+
+    <script type="module" src="/js/payment/pago-exitoso.js"></script>
+</body>
+</html>

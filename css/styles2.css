@@ -5,6 +5,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
 
+.modal-blur-bg {
+    background-color: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px); /* Para Safari */
+}
+
+.modal-hidden {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none; /* Para que no interfiera cuando está oculto */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Estado visible: opaco y tamaño normal */
+.modal-visible {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
 .swal2-popup {
     background-color: #1c1c1e !important; /* Fondo oscuro */
     color: #ffffff;                      /* Texto claro */
