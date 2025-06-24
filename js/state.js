@@ -24,3 +24,12 @@ export function setReservationForm(data) {
 export function getReservationForm() {
   return reservationFormState;
 }
+
+// estado de autenticacion
+let isAuthenticated = !!localStorage.getItem("token");
+export function setAuthenticated(value) {
+  isAuthenticated = value;
+}
+export function getAuthenticated() {
+  return isAuthenticated;
+}

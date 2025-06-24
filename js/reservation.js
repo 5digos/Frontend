@@ -1,4 +1,9 @@
-import { vehicles, vehicleCategories, transmissionTypes } from "./seeds.js";
+import {
+  getVehicles,
+  getVehicleCategories,
+  getBranches,
+  getTransmissionTypes,
+} from "./api/index.js";
 import {
   getSelectedBranchId,
   setReservationData,
@@ -6,12 +11,6 @@ import {
   getReservationForm,
 } from "./state.js";
 import { loadPage } from "./navigation.js";
-
-//sucursales del back
-async function fetchBranches() {
-  const res = await fetch("https://localhost:7053/api/v1/BranchOffice");
-  return await res.json();
-}
 
 // horarios de las reservas
 const hourOptions = Array.from({ length: 24 }, (_, i) => {
@@ -30,31 +29,36 @@ export function populateHourSelects() {
   }
 }
 
-export async function populateBranchSelect(selectedBranchId = null) {
-  const select = document.getElementById("branch");
-  if (!select) return;
-
-  select.innerHTML = "";
-
+export async function populateBranchSelect(
+  selectIds = ["branchInicio", "branchDestino"],
+  selectedBranchId = null
+) {
   try {
-    const branches = await fetchBranches();
+    const branches = await getBranches();
 
-    branches.forEach((branch) => {
-      const option = document.createElement("option");
-      option.value = branch.branchOfficeId;
-      option.textContent = `${branch.name} (${branch.city})`;
-      if (selectedBranchId && branch.branchOfficeId == selectedBranchId) {
-        option.selected = true;
+    for (const id of selectIds) {
+      const select = document.getElementById(id);
+      if (!select) continue;
+
+      select.innerHTML = "";
+
+      branches.forEach((branch) => {
+        const option = document.createElement("option");
+        option.value = String(branch.branchOfficeId);
+        option.textContent = branch.name;
+        select.appendChild(option);
+      });
+
+      if (selectedBranchId !== null) {
+        select.value = String(selectedBranchId);
       }
-      select.appendChild(option);
-    });
+    }
   } catch (error) {
-    console.error("Error al cargar sucursales:", error);
-    select.innerHTML = "<option value=''>Error al cargar sucursales</option>";
+    console.error("Error cargando sucursales:", error);
   }
 }
 
-export function populateCategorySelect() {
+export async function populateCategorySelect() {
   const select = document.getElementById("category");
   if (!select) return;
 
@@ -66,15 +70,21 @@ export function populateCategorySelect() {
   anyOption.selected = true;
   select.appendChild(anyOption);
 
-  vehicleCategories.forEach((category) => {
-    const option = document.createElement("option");
-    option.value = category.VehicleCategoryId;
-    option.textContent = category.Name;
-    select.appendChild(option);
-  });
+  try {
+    const categories = await getVehicleCategories();
+
+    categories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category.vehicleCategoryId;
+      option.textContent = category.name;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Error cargando categorías:", error);
+  }
 }
 
-export function populateTransmissionTypeSelect() {
+export async function populateTransmissionTypeSelect() {
   const select = document.getElementById("transmission");
   if (!select) return;
 
@@ -86,43 +96,58 @@ export function populateTransmissionTypeSelect() {
   anyOption.selected = true;
   select.appendChild(anyOption);
 
-  transmissionTypes.forEach((transmission) => {
-    const option = document.createElement("option");
-    option.value = transmission.Id;
-    option.textContent = transmission.Name;
-    select.appendChild(option);
-  });
+  try {
+    const transmissionTypes = await getTransmissionTypes();
+
+    transmissionTypes.forEach((transmission) => {
+      const option = document.createElement("option");
+      option.value = transmission.id;
+      option.textContent = transmission.name;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Error cargando tipos de transmisión:", error);
+  }
 }
 
 // cards de los autos
-export function renderVehicleCards(containerId = "vehicle-cards-container") {
+export async function renderVehicleCards(
+  containerId = "vehicle-cards-container"
+) {
   const section = document.getElementById(containerId);
   if (!section) return;
 
   section.innerHTML = "";
 
-  vehicles.forEach((vehicle) => {
-    const card = document.createElement("div");
-    card.className =
-      "w-full flex-shrink-0 rounded-xl shadow-md overflow-hidden ";
+  try {
+    const vehicles = await getVehicles();
 
-    card.innerHTML = `
-      <a href="#" class="block w-full h-full group rounded-xl overflow-hidden shadow-md">
-        <img
-          src="${vehicle.ImageUrl}"
-          class="w-full h-35 object-cover"
-          alt="${vehicle.Brand} ${vehicle.Model}"
-        />
-        <div class="p-2 bg-neutral-200 dark:bg-stone-900 text-stone-800 dark:text-neutral-200
-                    transition-colors duration-300
-                    group-hover:bg-neutral-300 group-hover:dark:bg-stone-950">
-          <h3 class="text-lg font-semibold text-red-400 text-center">${vehicle.Model}</h3>
-        </div>
-      </a>
-    `;
+    vehicles.forEach((vehicle) => {
+      const card = document.createElement("div");
+      card.className =
+        "w-full flex-shrink-0 rounded-xl shadow-md overflow-hidden ";
 
-    section.appendChild(card);
-  });
+      card.innerHTML = `
+        <a href="#" class="block w-full h-full group rounded-xl overflow-hidden shadow-md">
+          <img
+            src="${vehicle.imageUrl}"
+            onerror="this.onerror=null; this.src='img/img-not-found.jpg';"
+            class="w-full h-35 object-cover"
+            alt="${vehicle.brand} ${vehicle.model}"
+          />
+          <div class="p-2 bg-neutral-200 dark:bg-stone-900 text-stone-800 dark:text-neutral-200
+                      transition-colors duration-300
+                      group-hover:bg-neutral-300 group-hover:dark:bg-stone-950">
+            <h3 class="text-lg font-semibold text-red-400 text-center">${vehicle.model}</h3>
+          </div>
+        </a>
+      `;
+
+      section.appendChild(card);
+    });
+  } catch (error) {
+    console.error("Error cargando vehículos:", error);
+  }
 }
 
 // formulario de reserva
@@ -138,7 +163,7 @@ export function setupReservationFormHandler() {
     const branchInicio = getSelectedBranchId();
     const fechaInicio = formData.get("fechaInicio");
     const horaInicio = formData.get("horaInicio");
-    const branchDestino = Number(formData.get("branch"));
+    const branchDestino = Number(formData.get("branchDestino"));
     const fechaDevolucion = formData.get("fechaDevolucion");
     const horaDevolucion = formData.get("horaDevolucion");
 
@@ -179,7 +204,6 @@ export function setupReservationFormHandler() {
 // cargar formulario de reserva con datos previos
 export function prefillReservationForm() {
   const state = getReservationForm();
-  if (!state || Object.keys(state).length === 0) return;
 
   const setValue = (id, value) => {
     const el = document.getElementById(id);
@@ -188,11 +212,32 @@ export function prefillReservationForm() {
     }
   };
 
+  if (!state || Object.keys(state).length === 0) {
+    const now = new Date();
+
+    const rounded = new Date(now);
+    rounded.setHours(now.getHours() + 1, 0, 0, 0);
+
+    const fechaInicio = rounded.toISOString().split("T")[0];
+    const horaInicio = `${rounded.getHours().toString().padStart(2, "0")}:00`;
+
+    const devolucionDate = new Date(rounded);
+    devolucionDate.setDate(devolucionDate.getDate() + 1);
+    const fechaDevolucion = devolucionDate.toISOString().split("T")[0];
+
+    setValue("fechaInicio", fechaInicio);
+    setValue("horaInicio", horaInicio);
+    setValue("fechaDevolucion", fechaDevolucion);
+    setValue("horaDevolucion", horaInicio);
+    return;
+  }
+
+  setValue("branchInicio", state.branchInicio);
   setValue("fechaInicio", state.fechaInicio);
   setValue("horaInicio", state.horaInicio);
   setValue("fechaDevolucion", state.fechaDevolucion);
   setValue("horaDevolucion", state.horaDevolucion);
-  setValue("branch", state.branchDestino);
+  setValue("branchDestino", state.branchDestino);
   setValue("category", state.category);
   setValue("transmission", state.transmission);
   setValue("seatingCapacity", state.seatingCapacity);

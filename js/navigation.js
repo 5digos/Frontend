@@ -6,14 +6,15 @@ import {
   renderVehicleCards,
   setupReservationFormHandler,
   prefillReservationForm,
-  populateHourSelects,
 } from "./reservation.js";
+import { populateHourSelects } from "./reservation.js";
 import { getSelectedBranchId } from "./state.js";
-
-let mapInitialized = false;
 
 // cargar paginas
 export function loadPage(page) {
+  const state = { page };
+  localStorage.setItem("lastPage", JSON.stringify(state));
+
   fetch(`pages/${page}.html`)
     .then((res) => res.text())
     .then((html) => {
@@ -21,37 +22,38 @@ export function loadPage(page) {
       updateNavActiveState(page);
 
       if (page === "home") {
-        requestAnimationFrame(async () => {
-          if (!mapInitialized) {
-            await initializeMap();
-            mapInitialized = true;
-          }
+        requestAnimationFrame(() => {
+          initializeMap();
           deselectBranch();
+
+          const deselectBtn = document.getElementById("branch-deselect-btn");
+          if (deselectBtn) {
+            deselectBtn.addEventListener("click", deselectBranch);
+          }
         });
       }
-
       if (page === "reservation") {
         requestAnimationFrame(() => {
           populateCategorySelect();
           populateHourSelects();
-          populateBranchSelect(getSelectedBranchId());
+          populateBranchSelect(
+            ["branchInicio", "branchDestino"],
+            getSelectedBranchId()
+          );
           populateTransmissionTypeSelect();
           setupReservationFormHandler();
           prefillReservationForm();
         });
       }
-
       if (page === "filtered-vehicles") {
         requestAnimationFrame(() => {
           renderVehicleCards("vehicle-cards-container");
         });
       }
-
       const cancelBtn = document.getElementById("cancel-reservation-btn");
       if (cancelBtn) {
         cancelBtn.addEventListener("click", () => loadPage("home"));
       }
-
       const backToReservationBtn = document.getElementById(
         "back-to-reservation-btn"
       );
@@ -60,6 +62,12 @@ export function loadPage(page) {
           loadPage("reservation")
         );
       }
+      const logoutBtn = document.getElementById("logout-btn");
+      if (logoutBtn) {
+        import("./auth-tabs.js").then(({ handleLogout }) => {
+          logoutBtn.addEventListener("click", handleLogout);
+        });
+      }
     })
     .catch((err) => {
       document.getElementById("main").innerHTML =
@@ -67,6 +75,7 @@ export function loadPage(page) {
     });
 }
 
+// switchear paginas
 export function setupNavLinks() {
   document.addEventListener("click", (e) => {
     const target = e.target.closest("[data-page]");
@@ -78,9 +87,13 @@ export function setupNavLinks() {
   });
 }
 
+// actualizar estado activo del navbar
 function updateNavActiveState(activePage) {
   const navLinks = document.querySelectorAll(".page-link");
-  navLinks.forEach((link) => link.classList.remove("text-white"));
+
+  navLinks.forEach((link) => {
+    link.classList.remove("text-white");
+  });
 
   const activeLink = document.querySelector(`[data-page="${activePage}"]`);
   if (activeLink) {
