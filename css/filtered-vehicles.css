@@ -1,0 +1,51 @@
+.card-bg {
+  background-color: var(--card-bg-color);
+}
+
+.btn-reservar {
+  background-color: var(--color-red-500);
+  cursor: pointer;
+}
+
+.btn-reservar:hover {
+  filter: brightness(0.9);
+}
+
+.scroll-to-top {
+  position: fixed;
+  bottom: 85px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background: transparent;
+  border: none;
+  color: var(--color-red-500);
+  font-size: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  cursor: pointer;
+  z-index: 100;
+}
+.scroll-to-top.show {
+  opacity: 1;
+  visibility: visible;
+}
+.scroll-to-top:hover {
+  transform: scale(1.1);
+}
+
+/* #scrollToTopBtn {
+  background-color: var(--color-red-500);
+} */
+
+#vehicle-cards-container {
+  border-radius: 0.5rem;
+}
+
+img {  
+  border-radius: 0.5rem;
+}

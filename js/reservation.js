@@ -13,6 +13,7 @@ import {
   getReservationData
 } from "./state.js";
 import { loadPage } from "./navigation.js";
+import { hideSpinner, showSpinner } from "./components/spinners.js";
 
 // horarios de las reservas
 const hourOptions = Array.from({ length: 24 }, (_, i) => {
@@ -155,6 +156,7 @@ export async function populateTransmissionTypeSelect() {
 export async function renderVehicleCards(
   containerId = "vehicle-cards-container"
 ) {
+  showSpinner();
   const section = document.getElementById(containerId);
   if (!section) return;
 
@@ -182,6 +184,21 @@ export async function renderVehicleCards(
       brand: form.brand,
     };
     const vehicles = await getAvailableVehicles(filters);
+    if (!Array.isArray(vehicles)) {   
+         throw new Error('La respuesta del servidor no es válida.');           
+    }
+    if (vehicles.length === 0) {
+      if (section) {
+        section.innerHTML = `
+          <div class="w-full text-center p-6">
+            <h2 class="text-2xl font-bold text-gray-700">No hay vehículos disponibles</h2>
+            <p class="text-gray-500">Intenta ajustar tus filtros o vuelve más tarde.</p>
+          </div>
+        `;
+      }
+      hideSpinner();
+      return;
+    }
 
     vehicles.forEach((vehicle) => {
       const card = document.createElement("div");
@@ -220,8 +237,10 @@ export async function renderVehicleCards(
       `;
       section.appendChild(card);
     });
+    hideSpinner();
   } catch (error) {
     console.error("Error cargando vehículos:", error);
+    hideSpinner();
   }
 }
 
@@ -324,10 +343,10 @@ function combineDateTime(date, hour) {
   return new Date(`${date}T${hour}`);
 }
 
-// función global para reservar
-export function reservarVehiculo(vehicleId) {
-  console.log('Reservando vehículo:', vehicleId);
-  alert('Vehículo reservado: ' + vehicleId);
-}
-// Exponer en window para onclick inline
-window.reservarVehiculo = reservarVehiculo;
+// // función global para reservar
+// export function reservarVehiculo(vehicleId) {
+//   console.log('Reservando vehículo:', vehicleId);
+//   alert('Vehículo reservado: ' + vehicleId);
+// }
+// // Exponer en window para onclick inline
+// window.reservarVehiculo = reservarVehiculo;

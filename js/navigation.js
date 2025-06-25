@@ -9,6 +9,7 @@ import {
 } from "./reservation.js";
 import { populateHourSelects } from "./reservation.js";
 import { getSelectedBranchId } from "./state.js";
+import { initScrollToTop } from './components/scrollToTop.js';
 
 // cargar paginas
 export function loadPage(page) {
@@ -48,6 +49,7 @@ export function loadPage(page) {
       if (page === "filtered-vehicles") {
         requestAnimationFrame(() => {
           renderVehicleCards("vehicle-cards-container");
+          initScrollToTop({ btnSelector: '#scrollToTopBtn', showAfter: 300, scrollDuration: 600 });
         });
       }
       const cancelBtn = document.getElementById("cancel-reservation-btn");
