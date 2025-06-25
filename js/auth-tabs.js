@@ -31,7 +31,7 @@ export function setupAuthForm() {
 
       try {
         const data = await login(email, password);
-        localStorage.setItem("token", data.token);
+        localStorage.setItem("token", data.accessToken);
         localStorage.setItem("refreshToken", data.refreshToken);
         getAuthenticated(true);
         initializeApp();
@@ -46,7 +46,7 @@ export function setupAuthForm() {
           await verifyEmail(emailToVerify, code);
 
           const loginData = await login(emailToVerify, tempPassword);
-          localStorage.setItem("token", loginData.token);
+          localStorage.setItem("token", loginData.accessToken);
           localStorage.setItem("refreshToken", loginData.refreshToken);
           alert("Email verificado y sesión iniciada con éxito.");
 

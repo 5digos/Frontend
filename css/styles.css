@@ -12,4 +12,22 @@
     -webkit-appearance: none;
     margin: 0;
   }
+
+  :root {
+    --card-bg-color: rgb(29, 29, 29);
+    --color-red-500: oklch(63.7% 0.237 25.331);
+  }
+}
+
+.card-bg {
+  background-color: var(--card-bg-color);
+}
+
+.btn-reservar {
+  background-color: var(--color-red-500);
+  cursor: pointer;
+}
+
+.btn-reservar:hover {
+  filter: brightness(0.9);
 }

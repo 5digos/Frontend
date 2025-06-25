@@ -4,11 +4,13 @@ import {
   getBranches,
   getTransmissionTypes,
 } from "./api/index.js";
+import { getAvailableVehicles } from "./api/reservation.js";
 import {
   getSelectedBranchId,
   setReservationData,
   setReservationForm,
   getReservationForm,
+  getReservationData
 } from "./state.js";
 import { loadPage } from "./navigation.js";
 
@@ -110,7 +112,46 @@ export async function populateTransmissionTypeSelect() {
   }
 }
 
-// cards de los autos
+// // cards de los autos
+// export async function renderVehicleCards(
+//   containerId = "vehicle-cards-container"
+// ) {
+//   const section = document.getElementById(containerId);
+//   if (!section) return;
+
+//   section.innerHTML = "";
+
+//   try {
+//     const vehicles = await getVehicles();
+
+//     vehicles.forEach((vehicle) => {
+//       const card = document.createElement("div");
+//       card.className =
+//         "w-full flex-shrink-0 rounded-xl shadow-md overflow-hidden ";
+
+//       card.innerHTML = `
+//         <a href="#" class="block w-full h-full group rounded-xl overflow-hidden shadow-md">
+//           <img
+//             src="${vehicle.imageUrl}"
+//             onerror="this.onerror=null; this.src='img/img-not-found.jpg';"
+//             class="w-full h-35 object-cover"
+//             alt="${vehicle.brand} ${vehicle.model}"
+//           />
+//           <div class="p-2 bg-neutral-200 dark:bg-stone-900 text-stone-800 dark:text-neutral-200
+//                       transition-colors duration-300
+//                       group-hover:bg-neutral-300 group-hover:dark:bg-stone-950">
+//             <h3 class="text-lg font-semibold text-red-400 text-center">${vehicle.model}</h3>
+//           </div>
+//         </a>
+//       `;
+
+//       section.appendChild(card);
+//     });
+//   } catch (error) {
+//     console.error("Error cargando vehículos:", error);
+//   }
+// }
+
 export async function renderVehicleCards(
   containerId = "vehicle-cards-container"
 ) {
@@ -120,29 +161,63 @@ export async function renderVehicleCards(
   section.innerHTML = "";
 
   try {
-    const vehicles = await getVehicles();
+    // Obtener filtros desde estado; si no existen, volver a formulario
+    const data = getReservationData();
+    if (!data || !data.fechaHoraInicio) {
+      console.warn('Sin datos de filtros, redirigiendo a formulario');
+      loadPage('reservation');
+      return;
+    }
+    const form = getReservationForm();
+    const filters = {
+      pickupBranchOfficeId: data.branchInicio,
+      dropOffBranchOfficeId: data.branchDestino,
+      startTime: data.fechaHoraInicio.toISOString(),
+      endTime: data.fechaHoraDevolucion.toISOString(),
+      category: form.category,
+      seatingCapacity: form.seatingCapacity,
+      transmissionType: form.transmission,
+      maxPrice: form.maxPrice,
+      color: form.color,
+      brand: form.brand,
+    };
+    const vehicles = await getAvailableVehicles(filters);
 
     vehicles.forEach((vehicle) => {
       const card = document.createElement("div");
-      card.className =
-        "w-full flex-shrink-0 rounded-xl shadow-md overflow-hidden ";
+      card.className = "w-full max-w-sm mx-auto overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 card-bg rounded-lg";
 
+      // Tarjeta según diseño
       card.innerHTML = `
-        <a href="#" class="block w-full h-full group rounded-xl overflow-hidden shadow-md">
-          <img
-            src="${vehicle.imageUrl}"
-            onerror="this.onerror=null; this.src='img/img-not-found.jpg';"
-            class="w-full h-35 object-cover"
-            alt="${vehicle.brand} ${vehicle.model}"
-          />
-          <div class="p-2 bg-neutral-200 dark:bg-stone-900 text-stone-800 dark:text-neutral-200
-                      transition-colors duration-300
-                      group-hover:bg-neutral-300 group-hover:dark:bg-stone-950">
-            <h3 class="text-lg font-semibold text-red-400 text-center">${vehicle.model}</h3>
+        <div class="relative">
+          <div class="aspect-[4/3] relative overflow-hidden">
+            <img src="${vehicle.imageUrl}" onerror="this.onerror=null; this.src='img/img-not-found.jpg';" alt="${vehicle.brand} ${vehicle.model}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
           </div>
-        </a>
+          <div class="absolute top-3 right-3">
+            <span class="inline-flex items-center rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">${vehicle.category}</span>
+          </div>
+        </div>
+        <div class="p-4 space-y-3">
+          <div class="space-y-1">
+            <h3 class="font-bold text-lg text-white leading-tight">${vehicle.brand} ${vehicle.model}</h3>
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl font-bold text-white">$${Number(vehicle.price).toLocaleString()}</span>
+              <span class="text-sm text-gray-300 font-medium">/hora</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-sm text-gray-300">
+            <div class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              <span>${vehicle.seatingCapacity} asientos</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              <span>${vehicle.transmissionType}</span>
+            </div>
+          </div>
+          <button onclick="reservarVehiculo('${vehicle.id}')" class="w-full btn-reservar text-white font-semibold py-2.5 rounded-lg transition-all duration-200">Reservar</button>
+        </div>
       `;
-
       section.appendChild(card);
     });
   } catch (error) {
@@ -160,7 +235,7 @@ export function setupReservationFormHandler() {
 
     const formData = new FormData(e.target);
 
-    const branchInicio = getSelectedBranchId();
+    const branchInicio = Number(formData.get("branchInicio"));
     const fechaInicio = formData.get("fechaInicio");
     const horaInicio = formData.get("horaInicio");
     const branchDestino = Number(formData.get("branchDestino"));
@@ -248,3 +323,11 @@ export function prefillReservationForm() {
 function combineDateTime(date, hour) {
   return new Date(`${date}T${hour}`);
 }
+
+// función global para reservar
+export function reservarVehiculo(vehicleId) {
+  console.log('Reservando vehículo:', vehicleId);
+  alert('Vehículo reservado: ' + vehicleId);
+}
+// Exponer en window para onclick inline
+window.reservarVehiculo = reservarVehiculo;

@@ -15,6 +15,8 @@ export async function initializeMap() {
 
   if (map !== null) {
     map.remove();
+    // limpiar contenedor para evitar error de inicialización duplicada
+    mapElement.innerHTML = "";
     map = null;
   }
 
