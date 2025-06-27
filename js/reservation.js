@@ -163,27 +163,26 @@ export async function renderVehicleCards(
   section.innerHTML = "";
 
   try {
-    // Obtener datos obligatorios de estado
+    // Obtener filtros desde estado; si no existen, volver a formulario
     const data = getReservationData();
     if (!data || !data.fechaHoraInicio) {
       console.warn('Sin datos de filtros, redirigiendo a formulario');
       loadPage('reservation');
       return;
     }
-    // Obtener filtros opcionales de estado
     const form = getReservationForm();
     const filters = {
       pickupBranchOfficeId: data.branchInicio,
       dropOffBranchOfficeId: data.branchDestino,
       startTime: data.fechaHoraInicio.toISOString(),
       endTime: data.fechaHoraDevolucion.toISOString(),
-      // añade opcionales solo si tienen valor
-      ...(form.category && { category: form.category }),
-      ...(form.seatingCapacity && { seatingCapacity: form.seatingCapacity }),
-      ...(form.transmission && { transmissionType: form.transmission }),
-      ...(form.maxPrice && { maxPrice: form.maxPrice }),
+      category: form.category,
+      seatingCapacity: form.seatingCapacity,
+      transmissionType: form.transmission,
+      maxPrice: form.maxPrice,
+      color: form.color,
+      brand: form.brand,
     };
-
     const vehicles = await getAvailableVehicles(filters);
     if (!Array.isArray(vehicles)) {   
          throw new Error('La respuesta del servidor no es válida.');           
