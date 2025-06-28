@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reserva Confirmada</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="../css/proxima-reserva.css">
+</head>
+<body class="min-h-screen bg-gray-900">
+  <!-- Loading inicial -->
+  <div id="page-loading" class="page-loading">
+    <div class="text-center">
+      <div class="spinner mx-auto mb-4 w-8 h-8 border-4 border-gray-600 border-t-white"></div>
+      <p class="text-white">Cargando reserva confirmada...</p>
+    </div>
+  </div>
+  <div class="max-w-md mx-auto bg-main shadow-lg min-h-screen">
+    <!-- Header -->
+    <div class="bg-green-600 text-white p-4 flex items-center gap-3">
+      <span class="material-icons text-2xl">check_circle</span>
+      <h1 class="text-2xl font-bold">Reserva Confirmada</h1>
+    </div>
+    <!-- Imagen -->
+    <div class="relative">
+      <div class="aspect-[4/3] overflow-hidden">
+        <img id="vehicle-image" src="" alt="" class="w-full h-full object-cover" />
+      </div>
+      <div id="vehicle-title" class="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1 rounded-lg">
+        <span class="font-semibold">Cargando...</span>
+      </div>
+    </div>
+    <div class="p-4 space-y-4">
+      <!-- Mensaje de confirmación -->
+      <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center">
+        <span class="material-icons text-green-400 text-3xl mb-2 block">check_circle</span>
+        <h2 class="text-green-400 font-semibold text-lg mb-1">¡Reserva Confirmada!</h2>
+        <p class="text-gray-300 text-sm">Tu reserva ha sido confirmada exitosamente. Ya puedes retirar tu vehículo.</p>
+      </div>
+
+      <!-- Datos del Vehículo -->
+      <div class="bg-accordion border border-gray-600 rounded-lg shadow-sm">
+        <!-- header accordion -->
+        <button onclick="toggleAccordion('vehicle')" class="w-full p-4 flex items-center justify-between rounded-t-lg accordion-hover">
+          <div class="flex items-center gap-3">
+            <span class="material-icons text-blue-400 text-xl">directions_car</span>
+            <span class="font-semibold text-white">Datos del Vehículo</span>
+          </div>
+          <svg id="vehicle-arrow" class="w-5 h-5 text-gray-400 accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="vehicle-content" class="accordion-content">
+          <div class="px-4 pb-4 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <span class="text-sm text-gray-400">Marca y Modelo</span>
+                <p id="vehicle-brand-model" class="font-medium text-white">-</p>
+              </div>
+              <div>
+                <span class="text-sm text-gray-400">Año</span>
+                <p id="vehicle-year" class="font-medium text-white">-</p>
+              </div>
+              <div>
+                <span class="text-sm text-gray-400">Patente</span>
+                <p id="vehicle-plate" class="font-medium text-white">-</p>
+              </div>
+              <div>
+                <span class="text-sm text-gray-400">Precio/hora</span>
+                <p id="vehicle-price" class="font-bold text-green-400">-</p>
+              </div>
+            </div>
+            <div class="flex items-center justify-between py-2 border-t border-gray-600">
+              <span class="text-sm text-gray-300">Asientos</span>
+              <span id="vehicle-seats" class="font-medium text-white">-</span>
+            </div>
+            <div class="flex items-center justify-between py-2">
+              <span class="text-sm text-gray-300">Transmisión</span>
+              <span id="vehicle-transmission" class="font-medium text-white">-</span>
+            </div>
+            <div class="flex items-center justify-between py-2">
+              <span class="text-sm text-gray-300">Categoría</span>
+              <span id="vehicle-category" class="font-medium text-white">-</span>
+            </div>
+            <div class="border-t border-gray-600 pt-4">
+              <h4 class="font-medium text-white mb-2">Documentos</h4>
+              <div id="documents-container" class="space-y-2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Datos de la Reserva -->
+      <div class="bg-accordion border border-gray-600 rounded-lg shadow-sm">
+        <button onclick="toggleAccordion('reservation')" class="w-full p-4 flex items-center justify-between rounded-t-lg accordion-hover">
+          <div class="flex items-center gap-3">
+            <span class="material-icons text-green-400 text-xl">calendar_today</span>
+            <span class="font-semibold text-white">Datos de la Reserva</span>
+          </div>
+          <svg id="reservation-arrow" class="w-5 h-5 text-gray-400 accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div id="reservation-content" class="accordion-content">
+          <div class="px-4 pb-4 space-y-4">
+            <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+              <div class="flex items-start gap-3 mb-2">
+                <span class="material-icons text-blue-400 text-lg">place</span>
+                <div class="flex-1">
+                  <span class="text-sm text-blue-400 font-medium">Sucursal de Retiro</span>
+                  <h5 id="pickup-office-name" class="font-semibold text-white">-</h5>
+                </div>
+              </div>
+              <div id="pickup-office-details" class="ml-8 space-y-2 text-gray-300 text-sm hidden">
+                <div class="flex items-start gap-2">
+                  <span class="material-icons text-gray-300 text-base">place</span>
+                  <p id="pickup-office-address">-</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="material-icons text-gray-300 text-base">phone</span>
+                  <p id="pickup-office-phone">-</p>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="material-icons text-gray-300 text-base">info</span>
+                  <p id="pickup-office-reference" class="text-xs">-</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+              <div class="flex items-start gap-3 mb-2">
+                <span class="material-icons text-red-400 text-lg">place</span>
+                <div class="flex-1">
+                  <span class="text-sm text-red-400 font-medium">Sucursal de Devolución</span>
+                  <h5 id="dropoff-office-name" class="font-semibold text-white">-</h5>
+                </div>
+              </div>
+              <div id="dropoff-office-details" class="ml-8 space-y-2 text-gray-300 text-sm hidden">
+                <div class="flex items-start gap-2">
+                  <span class="material-icons text-gray-300 text-base">place</span>
+                  <p id="dropoff-office-address">-</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="material-icons text-gray-300 text-base">phone</span>
+                  <p id="dropoff-office-phone">-</p>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="material-icons text-gray-300 text-base">info</span>
+                  <p id="dropoff-office-reference" class="text-xs">-</p>
+                </div>
+              </div>
+            </div>
+            <div class="border-t border-gray-600 pt-4">
+              <h4 class="font-medium text-white mb-2">Horarios Programados</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <span class="text-sm text-gray-400">Inicio</span>
+                  <p id="res-date-start" class="font-medium text-white">-</p>
+                  <p id="res-time-start" class="text-sm text-gray-300">-</p>
+                </div>
+                <div>
+                  <span class="text-sm text-gray-400">Fin</span>
+                  <p id="res-date-end" class="font-medium text-white">-</p>
+                  <p id="res-time-end" class="text-sm text-gray-300">-</p>
+                </div>
+              </div>
+            </div>
+            <div class="border-t border-gray-600 pt-4">
+              <h4 class="font-medium text-white mb-2">Horarios Reales</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <span class="text-sm text-gray-400">Retiro Real</span>
+                  <p id="res-date-real-start" class="font-medium text-gray-500">-</p>
+                  <p id="res-time-real-start" class="text-sm text-gray-500">-</p>
+                </div>
+                <div>
+                  <span class="text-sm text-gray-400">Devolución Real</span>
+                  <p id="res-date-real-end" class="font-medium text-gray-500">-</p>
+                  <p id="res-time-real-end" class="text-sm text-gray-500">-</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Botón de Acción Principal -->
+      <div class="pt-4 space-y-4">
+        <button id="open-vehicle-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
+          <span class="material-icons">lock_open</span>
+          Abrir Vehículo
+        </button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="../js/views/reserva-confirmada.js"></script>
+</body>
+</html>

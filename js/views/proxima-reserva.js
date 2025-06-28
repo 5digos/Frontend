@@ -127,8 +127,38 @@ async function loadNextReservation() {
       const btn = document.getElementById('confirm-btn');
       btn.disabled = true;
       btn.textContent = 'Confirmando...';
-      await apiConfirmReservation(resDetail.reservationId);
-      btn.textContent = '¡Reserva Confirmada!';
+      
+      try {
+        // Prepare the confirmation data
+        const confirmationData = {
+          reservationId: resDetail.reservationId,
+          userId: resDetail.userId,
+          vehicleId: resDetail.vehicleId,
+          pickupBranchOfficeId: resDetail.pickupBranchOfficeId,
+          pickupBranchOfficeName: resDetail.pickupBranchOfficeName,
+          dropOffBranchOfficeId: resDetail.dropOffBranchOfficeId,
+          dropOffBranchOfficeName: resDetail.dropOffBranchOfficeName,
+          startTime: resDetail.startTime,
+          endTime: resDetail.endTime,
+          actualPickupTime: resDetail.actualPickupTime,
+          actualReturnTime: resDetail.actualReturnTime,
+          hourlyRateSnapshot: resDetail.hourlyRateSnapshot,
+          status: "Confirmed"
+        };
+        
+        await apiConfirmReservation(resDetail.reservationId, confirmationData);
+        
+        // Store the reservation ID for the confirmation page
+        localStorage.setItem('confirmedReservationId', resDetail.reservationId);
+        
+        // Redirect to confirmation page
+        window.location.href = 'reserva-confirmada.html';
+      } catch (error) {
+        console.error('Error confirming reservation:', error);
+        btn.disabled = false;
+        btn.textContent = 'Confirmar Reserva';
+        alert('Error al confirmar la reserva: ' + error.message);
+      }
     });
     document.getElementById('cancel-btn').addEventListener('click', async () => {
       if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;

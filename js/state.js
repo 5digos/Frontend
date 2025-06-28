@@ -37,8 +37,10 @@ export function getReservationForm() {
 let isAuthenticated = !!localStorage.getItem("token");
 export function setAuthenticated(value) {
   isAuthenticated = value;
-  if (value) localStorage.setItem('token', true);
-  else localStorage.removeItem('token');
+  if (!value) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+  }
 }
 export function getAuthenticated() {
   return isAuthenticated;

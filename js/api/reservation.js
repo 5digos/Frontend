@@ -1,4 +1,5 @@
 const BASE_URL = 'https://localhost:7055/api/v1';
+const PAYMENT_BASE_URL = 'https://localhost:7059/api';
 
 // Obtener headers de autenticación con token
 function getAuthHeaders() {
@@ -19,6 +20,11 @@ export const RESERVATION_URLS = {
     RETURN_RESERVATION: id => `${BASE_URL}/Reservations/${id}/return`,
     PAYMENT_RESERVATION: id => `${BASE_URL}/Reservations/${id}/payment`,
     ADD_REVIEW: id => `${BASE_URL}/Reservations/${id}/reviews`
+};
+
+//Payment
+export const PAYMENT_URLS = {
+    GET_RESERVATION_SUMMARY: id => `${PAYMENT_BASE_URL}/Payment/reservation/${id}`
 };
 
 // Funciones para consumir los endpoints de Reservation
@@ -48,9 +54,17 @@ export async function createReservation(reservationData) {
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(reservationData),
     });
+    
     if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Error al crear la reserva');
+        if (res.status === 401) {
+            throw new Error('Los microservicios necesitan compartir la misma configuración JWT. Verifica que ambos servicios (Auth:7052 y Reservations:7055) usen la misma clave secreta JWT.');
+        }
+        try {
+            const error = await res.json();
+            throw new Error(error.message || `Error ${res.status}: ${res.statusText}`);
+        } catch (parseError) {
+            throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
     }
     return await res.json();
 }
@@ -103,8 +117,12 @@ export async function updateReservation(id, updateData) {
     return await res.json();
 }
 
-export async function confirmReservation(id) {
-    const res = await fetch(RESERVATION_URLS.CONFIRM_RESERVATION(id), { method: 'POST', headers: getAuthHeaders() });
+export async function confirmReservation(id, reservationData) {
+    const res = await fetch(RESERVATION_URLS.CONFIRM_RESERVATION(id), { 
+        method: 'POST', 
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(reservationData)
+    });
     if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || 'Error al confirmar la reserva');
@@ -122,10 +140,31 @@ export async function cancelReservation(id) {
 }
 
 export async function pickupReservation(id) {
-    const res = await fetch(RESERVATION_URLS.PICKUP_RESERVATION(id), { method: 'POST', headers: getAuthHeaders() });
+    const res = await fetch(RESERVATION_URLS.PICKUP_RESERVATION(id), { 
+        method: 'POST', 
+        headers: getAuthHeaders()
+    });
     if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Error al registrar la retirada del vehículo');
+        if (res.status === 409) {
+            try {
+                const error = await res.json();
+                throw new Error(error.message || 'La hora de retiro proporcionada no es válida.');
+            } catch (parseError) {
+                throw new Error('Conflicto: La hora de retiro proporcionada no es válida. Verifica que estés dentro del horario permitido para recoger el vehículo.');
+            }
+        }
+        if (res.status === 403) {
+            throw new Error('No tienes permisos para recoger esta reserva.');
+        }
+        if (res.status === 404) {
+            throw new Error('Reserva no encontrada.');
+        }
+        try {
+            const error = await res.json();
+            throw new Error(error.message || 'Error al registrar la retirada del vehículo');
+        } catch (parseError) {
+            throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
     }
     return await res.json();
 }
@@ -161,6 +200,35 @@ export async function addReview(id, reviewData) {
     if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || 'Error al agregar la reseña');
+    }
+    return await res.json();
+}
+
+// Payment functions
+export async function getReservationSummaryForPayment(id) {
+    const res = await fetch(PAYMENT_URLS.GET_RESERVATION_SUMMARY(id), { 
+        method: 'GET', 
+        headers: getAuthHeaders() 
+    });
+    if (!res.ok) {
+        if (res.status === 404) {
+            throw new Error('Reserva no encontrada para el pago.');
+        }
+        if (res.status === 403) {
+            throw new Error('No tienes permisos para ver los datos de pago de esta reserva.');
+        }
+        if (res.status === 401) {
+            throw new Error('Error de autenticación: El microservicio de Payment no puede acceder al servicio de Reservations. Verifica que ambos servicios compartan la misma configuración JWT.');
+        }
+        if (res.status === 500) {
+            throw new Error('Error interno del servidor de pagos. Verifica que el microservicio de Payment esté configurado correctamente y tenga acceso al servicio de Reservations.');
+        }
+        try {
+            const error = await res.json();
+            throw new Error(error.message || 'Error al obtener los datos de pago de la reserva');
+        } catch (parseError) {
+            throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
     }
     return await res.json();
 }

@@ -1,0 +1,9 @@
+{
+  "reservationId": "123e4567-e89b-12d3-a456-426614174000",
+  "userId": 123,
+  "startTime": "2025-06-28T10:00:00.000Z",
+  "endTime": "2025-06-28T14:00:00.000Z",
+  "actualPickupTime": "2025-06-28T10:15:00.000Z",
+  "actualReturnTime": "2025-06-28T15:30:00.000Z",
+  "hourlyRateSnapshot": 25.50
+}

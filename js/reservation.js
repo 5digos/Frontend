@@ -4,7 +4,7 @@ import {
   getBranches,
   getTransmissionTypes,
 } from "./api/index.js";
-import { getAvailableVehicles } from "./api/reservation.js";
+import { getAvailableVehicles, createReservation } from "./api/reservation.js";
 import {
   getSelectedBranchId,
   setReservationData,
@@ -343,10 +343,64 @@ function combineDateTime(date, hour) {
   return new Date(`${date}T${hour}`);
 }
 
-// // función global para reservar
-// export function reservarVehiculo(vehicleId) {
-//   console.log('Reservando vehículo:', vehicleId);
-//   alert('Vehículo reservado: ' + vehicleId);
-// }
-// // Exponer en window para onclick inline
-// window.reservarVehiculo = reservarVehiculo;
+// función global para reservar
+export async function reservarVehiculo(vehicleId) {
+  try {
+    // Verificar autenticación
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Debes iniciar sesión para realizar una reserva.');
+      loadPage('login');
+      return;
+    }
+
+    // Obtener datos de la reserva desde el estado
+    const reservationData = getReservationData();
+    
+    if (!reservationData || !reservationData.fechaHoraInicio || !reservationData.fechaHoraDevolucion) {
+      alert('Error: No se encontraron datos de la reserva. Por favor, vuelve a realizar la búsqueda.');
+      loadPage('reservation');
+      return;
+    }
+
+    // Preparar el cuerpo de la solicitud según el formato exacto del endpoint
+    const requestBody = {
+      vehicleId: vehicleId,
+      pickupBranchOfficeId: reservationData.branchInicio,
+      dropOffBranchOfficeId: reservationData.branchDestino,
+      startTime: reservationData.fechaHoraInicio.toISOString(),
+      endTime: reservationData.fechaHoraDevolucion.toISOString()
+    };
+
+    // Mostrar spinner mientras se procesa la reserva
+    showSpinner();
+
+    // Llamar a la API para crear la reserva
+    const result = await createReservation(requestBody);
+
+    // Ocultar spinner
+    hideSpinner();
+
+    // Mostrar alerta de éxito
+    alert('Se creó correctamente la reserva');
+
+    console.log('Reserva creada exitosamente:', result);
+    
+  } catch (error) {
+    hideSpinner();
+    console.error('Error al crear la reserva:', error);
+    
+    // Manejar errores específicos de autenticación
+    if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+      alert('Error de autenticación. Por favor, inicia sesión nuevamente.');
+      loadPage('login');
+      return;
+    }
+    
+    // Mostrar mensaje de error específico
+    const errorMessage = error.message || 'Ocurrió un error inesperado al crear la reserva.';
+    alert(`Error al crear la reserva: ${errorMessage}`);
+  }
+}
+// Exponer en window para onclick inline
+window.reservarVehiculo = reservarVehiculo;

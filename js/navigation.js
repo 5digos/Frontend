@@ -52,6 +52,11 @@ export function loadPage(page) {
           initScrollToTop({ btnSelector: '#scrollToTopBtn', showAfter: 300, scrollDuration: 600 });
         });
       }
+      if (page === "activity") {
+        requestAnimationFrame(() => {
+          setupProximaReservaButton();
+        });
+      }
       const cancelBtn = document.getElementById("cancel-reservation-btn");
       if (cancelBtn) {
         cancelBtn.addEventListener("click", () => loadPage("home"));
@@ -75,6 +80,21 @@ export function loadPage(page) {
       document.getElementById("main").innerHTML =
         "<p class='text-red-500'>Error cargando la página.</p>";
     });
+}
+
+// cargar paginas desde la carpeta src
+export function loadSrcPage(pageName) {
+  window.location.href = `src/${pageName}.html`;
+}
+
+// configurar el botón de próxima reserva
+function setupProximaReservaButton() {
+  const proximaReservaBtn = document.getElementById("proxima-reserva-btn");
+  if (proximaReservaBtn) {
+    proximaReservaBtn.addEventListener("click", () => {
+      loadSrcPage("proxima-reserva");
+    });
+  }
 }
 
 // switchear paginas

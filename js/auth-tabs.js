@@ -6,7 +6,7 @@ import {
   resendVerificationEmail,
 } from "./api/auth.js";
 import { loadLoginView, initializeApp } from "./main.js";
-import { getAuthenticated } from "./state.js";
+import { getAuthenticated, setAuthenticated } from "./state.js";
 
 let emailToVerify = null;
 let tempPassword = null;
@@ -33,7 +33,7 @@ export function setupAuthForm() {
         const data = await login(email, password);
         localStorage.setItem("token", data.accessToken);
         localStorage.setItem("refreshToken", data.refreshToken);
-        getAuthenticated(true);
+        setAuthenticated(true);
         initializeApp();
       } catch (error) {
         alert(error.message || "Error en login");
@@ -262,5 +262,6 @@ export async function handleLogout() {
 function cleanupSession() {
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
+  setAuthenticated(false);
   loadLoginView();
 }
