@@ -36,7 +36,7 @@ function downloadDocument(url, docType) {
   }, 500);
 }
 
-async function loadNextReservation() {
+export async function loadNextReservation() {
   // Validar que estamos en la vista correcta
   if (!document.getElementById('vehicle-image')) return;
   try {

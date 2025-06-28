@@ -4,7 +4,7 @@ import {
   getBranches,
   getTransmissionTypes,
 } from "./api/index.js";
-import { getAvailableVehicles } from "./api/reservation.js";
+import { getAvailableVehicles, createReservation } from "./api/reservation.js";
 import {
   getSelectedBranchId,
   setReservationData,
@@ -112,46 +112,6 @@ export async function populateTransmissionTypeSelect() {
     console.error("Error cargando tipos de transmisión:", error);
   }
 }
-
-// // cards de los autos
-// export async function renderVehicleCards(
-//   containerId = "vehicle-cards-container"
-// ) {
-//   const section = document.getElementById(containerId);
-//   if (!section) return;
-
-//   section.innerHTML = "";
-
-//   try {
-//     const vehicles = await getVehicles();
-
-//     vehicles.forEach((vehicle) => {
-//       const card = document.createElement("div");
-//       card.className =
-//         "w-full flex-shrink-0 rounded-xl shadow-md overflow-hidden ";
-
-//       card.innerHTML = `
-//         <a href="#" class="block w-full h-full group rounded-xl overflow-hidden shadow-md">
-//           <img
-//             src="${vehicle.imageUrl}"
-//             onerror="this.onerror=null; this.src='img/img-not-found.jpg';"
-//             class="w-full h-35 object-cover"
-//             alt="${vehicle.brand} ${vehicle.model}"
-//           />
-//           <div class="p-2 bg-neutral-200 dark:bg-stone-900 text-stone-800 dark:text-neutral-200
-//                       transition-colors duration-300
-//                       group-hover:bg-neutral-300 group-hover:dark:bg-stone-950">
-//             <h3 class="text-lg font-semibold text-red-400 text-center">${vehicle.model}</h3>
-//           </div>
-//         </a>
-//       `;
-
-//       section.appendChild(card);
-//     });
-//   } catch (error) {
-//     console.error("Error cargando vehículos:", error);
-//   }
-// }
 
 export async function renderVehicleCards(
   containerId = "vehicle-cards-container"
@@ -343,10 +303,72 @@ function combineDateTime(date, hour) {
   return new Date(`${date}T${hour}`);
 }
 
-// // función global para reservar
-// export function reservarVehiculo(vehicleId) {
-//   console.log('Reservando vehículo:', vehicleId);
-//   alert('Vehículo reservado: ' + vehicleId);
-// }
-// // Exponer en window para onclick inline
-// window.reservarVehiculo = reservarVehiculo;
+// función global para reservar
+export function reservarVehiculo(vehicleId) {
+    // Si ya existe el modal, no lo agregamos de nuevo
+    let modal = document.getElementById('modal-reservar-vehiculo');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-reservar-vehiculo';
+        modal.innerHTML = `
+      <div class="modal-overlay" style="position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;">
+        <div class="modal-content" style="background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);">
+          <h2 style="font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:var(--color-red-500,#e53935);">¿Proceder a crear una nueva reserva?</h2>
+          <div style="display:flex;gap:1rem;justify-content:center;">
+            <button id="modal-reservar-si" style="background:var(--color-red-500,#e53935);color:white;padding:0.5rem 1.5rem;border:none;border-radius:0.5rem;font-weight:bold;transition:filter .2s;">Sí</button>
+            <button id="modal-reservar-no" style="background:transparent;color:var(--color-red-500,#e53935);border:1px solid var(--color-red-500,#e53935);padding:0.5rem 1.5rem;border-radius:0.5rem;font-weight:bold;transition:background .2s,color .2s;">No</button>
+          </div>
+        </div>
+      </div>
+    `;
+        document.body.appendChild(modal);
+        // Hover styles
+        const style = document.createElement('style');
+        style.innerHTML = `
+        #modal-reservar-vehiculo #modal-reservar-si:hover {
+          filter: brightness(0.9);
+        }
+        #modal-reservar-vehiculo #modal-reservar-no:hover {
+          background: var(--color-red-500,#e53935);
+          color: #fff;
+        }
+        `;
+        modal.appendChild(style);
+    } else {
+        modal.style.display = 'flex';
+    }
+
+    // Cerrar modal
+    function closeModal() {
+        if (modal) modal.remove();
+    }
+
+    // Botón No
+    modal.querySelector('#modal-reservar-no').onclick = closeModal;
+
+    // Botón Sí
+    modal.querySelector('#modal-reservar-si').onclick = async function () {
+        modal.querySelector('#modal-reservar-si').disabled = true;
+        modal.querySelector('#modal-reservar-si').textContent = 'Creando...';
+        try {
+            // Tomar datos de reserva del estado
+            const data = getReservationData();
+            const reservationData = {
+                vehicleId,
+                pickupBranchOfficeId: data.branchInicio,
+                dropOffBranchOfficeId: data.branchDestino,
+                startTime: data.fechaHoraInicio,
+                endTime: data.fechaHoraDevolucion,
+            };
+            const res = await createReservation(reservationData);
+            closeModal();
+            // Abrir la reserva activa en una nueva ventana
+            loadPage('activity');
+        } catch (e) {
+            alert('Error al crear la reserva: ' + (e.message || e));
+            closeModal();
+        }
+    }
+}
+
+window.reservarVehiculo = reservarVehiculo;
