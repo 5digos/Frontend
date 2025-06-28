@@ -11,7 +11,17 @@ export function renderProximaReserva() {
     }
 
     contenedor.innerHTML = `
-
+    <div class="bg-accordion border border-gray-600 rounded-lg shadow-lg mb-6">
+    <button onclick="toggleAccordion('proxima')" class="w-full p-4 flex items-center justify-between rounded-t-lg accordion-hover">
+      <div class="flex-1 flex justify-center items-center gap-3">
+        <span class="material-icons text-yellow-400 text-xl">event</span>
+        <span class="font-semibold text-white">Próxima Reserva</span>
+      </div>
+      <svg id="proxima-arrow" class="w-5 h-5 text-gray-400 accordion-arrow rotated" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+    <div id="proxima-content" class="accordion-content active">
     <div id="page-loading" class="page-loading">
     <div class="text-center">
       <div class="spinner mx-auto mb-4 w-8 h-8 border-4 border-gray-600 border-t-white"></div>
@@ -20,14 +30,14 @@ export function renderProximaReserva() {
   </div>
   <div class="max-w-md mx-auto bg-main shadow-lg min-h-screen">
     <!-- Header -->
-    <div class="bg-gray-800 text-white p-4 flex items-center gap-3">
-      <!-- <button onclick="history.back()" class="p-1 hover:bg-gray-700 rounded">
+    <!-- <div class="bg-gray-800 text-white p-4 flex items-center gap-3">
+       <button onclick="history.back()" class="p-1 hover:bg-gray-700 rounded">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
-      </button> -->
-      <h1 class="text-2xl font-bold">Próxima Reserva</h1>
-    </div>
+      </button> 
+      <h1 class="text-2xl font-bold">Próxima Reserva</h1> 
+    </div>-->
     <!-- Imagen -->
     <div class="relative">
       <div class="aspect-[4/3] overflow-hidden">
@@ -190,7 +200,29 @@ export function renderProximaReserva() {
       </div>
     </div>
   </div>
+  </div>
+  </div>
   `;
+
+    contenedor.innerHTML += `
+  <div class="bg-accordion border border-gray-600 rounded-lg shadow-lg mb-6">
+    <button onclick="toggleAccordion('historial')" class="w-full p-4 flex items-center justify-between rounded-t-lg accordion-hover">
+      <div class="flex-1 flex justify-center items-center gap-3">
+        <span class="material-icons text-purple-400 text-xl">history</span>
+        <span class="font-semibold text-white">Historial de Reservas</span>
+      </div>
+      <svg id="historial-arrow" class="w-5 h-5 text-gray-400 accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+    <div id="historial-content" class="accordion-content">
+      <div class="p-4 text-gray-400 text-sm italic text-center">
+        Aún no hay historial disponible.
+      </div>
+    </div>
+  </div>
+`;
+
 
     loadNextReservation();
 }
