@@ -152,7 +152,7 @@ async function loadNextReservation() {
         localStorage.setItem('confirmedReservationId', resDetail.reservationId);
         
         // Redirect to confirmation page
-        window.location.href = 'reserva-confirmada.html';
+        window.location.href = '../src/reserva-confirmada.html';
       } catch (error) {
         console.error('Error confirming reservation:', error);
         btn.disabled = false;

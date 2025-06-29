@@ -87,36 +87,74 @@ async function loadReservationDetails(reservation) {
       getBranchOfficeById(reservation.dropOffBranchOfficeId)
     ]);
 
-    // Update vehicle info
-    document.getElementById('vehicle-image').src = vehicleDetail.imageUrl || '../img/img-not-found.jpg';
-    document.getElementById('vehicle-title').innerHTML = `<span class="font-semibold">${vehicleDetail.brand} ${vehicleDetail.model} ${vehicleDetail.year}</span>`;
-    document.getElementById('vehicle-brand-model').textContent = `${vehicleDetail.brand} ${vehicleDetail.model}`;
-    document.getElementById('vehicle-year').textContent = vehicleDetail.year;
-    document.getElementById('vehicle-plate').textContent = vehicleDetail.licensePlate;
-    document.getElementById('vehicle-price').textContent = `$${vehicleDetail.hourlyRate}/hora`;
-    document.getElementById('vehicle-seats').textContent = vehicleDetail.seatingCapacity;
-    document.getElementById('vehicle-transmission').textContent = vehicleDetail.transmissionType;
-    document.getElementById('vehicle-category').textContent = vehicleDetail.category;
+    console.log('Vehicle detail loaded:', vehicleDetail);
+    console.log('Pickup office loaded:', pickupOffice);
+    console.log('Dropoff office loaded:', dropoffOffice);
 
-    // Documents
+    // Update vehicle info - using the same structure as proxima-reserva.js
+    const imgEl = document.getElementById('vehicle-image');
+    const titleContainer = document.getElementById('vehicle-title');
+    
+    if (imgEl) {
+      imgEl.src = vehicleDetail.vehicle?.imageUrl || '../img/img-not-found.jpg';
+      imgEl.alt = `${vehicleDetail.vehicle?.brand || ''} ${vehicleDetail.vehicle?.model || ''}`;
+    }
+    
+    if (titleContainer) {
+      titleContainer.innerHTML = `<span class="font-semibold">${vehicleDetail.vehicle?.brand || ''} ${vehicleDetail.vehicle?.model || ''} ${vehicleDetail.vehicle?.year || ''}</span>`;
+    }
+    
+    document.getElementById('vehicle-brand-model').textContent = `${vehicleDetail.vehicle?.brand || 'N/A'} ${vehicleDetail.vehicle?.model || 'N/A'}`;
+    document.getElementById('vehicle-year').textContent = vehicleDetail.vehicle?.year || 'N/A';
+    document.getElementById('vehicle-plate').textContent = vehicleDetail.vehicle?.licensePlate || 'N/A';
+    document.getElementById('vehicle-price').textContent = `$${Number(reservation.hourlyRateSnapshot || vehicleDetail.vehicle?.price || 0).toLocaleString()}`;
+    document.getElementById('vehicle-seats').textContent = vehicleDetail.vehicle?.seatingCapacity || 'N/A';
+    document.getElementById('vehicle-transmission').textContent = vehicleDetail.vehicle?.transmissionType?.name || vehicleDetail.vehicle?.transmissionType || 'N/A';
+    document.getElementById('vehicle-category').textContent = vehicleDetail.vehicle?.category?.name || vehicleDetail.vehicle?.category || 'N/A';
+
+    // Documents - using the same structure as proxima-reserva.js
     const docsContainer = document.getElementById('documents-container');
+    docsContainer.innerHTML = ''; // Clear existing content
+    
     if (vehicleDetail.documents && vehicleDetail.documents.length > 0) {
-      docsContainer.innerHTML = vehicleDetail.documents.map(doc => `
-        <button id="download-${doc.type}" onclick="downloadDocument('${doc.url}', '${doc.type}')" 
-                class="w-full flex items-center justify-between p-2 border border-gray-600 rounded-lg hover:bg-gray-700 text-sm">
-          <span class="text-gray-300">${doc.type}</span>
-          <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-        </button>
-      `).join('');
+      vehicleDetail.documents.forEach(doc => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-2 document-item rounded-lg transition-colors';
+        div.innerHTML = `
+          <span class="text-sm text-gray-200">${doc.docType.toUpperCase()}</span>
+          <button id="download-${doc.docType}" class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </button>
+        `;
+        docsContainer.appendChild(div);
+        document.getElementById(`download-${doc.docType}`).addEventListener('click', () => downloadDocument(doc.url, doc.docType));
+      });
     } else {
       docsContainer.innerHTML = '<p class="text-gray-500 text-sm">No hay documentos disponibles</p>';
     }
 
-    // Update reservation info
-    document.getElementById('pickup-office-name').textContent = pickupOffice.name;
-    document.getElementById('dropoff-office-name').textContent = dropoffOffice.name;
+    // Update reservation info - using the same structure as proxima-reserva.js
+    document.getElementById('pickup-office-name').textContent = reservation.pickupBranchOfficeName || 'N/A';
+    document.getElementById('dropoff-office-name').textContent = reservation.dropOffBranchOfficeName || 'N/A';
+    
+    // populate branch details
+    if (pickupOffice) {
+      const pickupDetails = document.getElementById('pickup-office-details');
+      if (pickupDetails) pickupDetails.classList.remove('hidden');
+      document.getElementById('pickup-office-address').textContent = `${pickupOffice.address || ''}, ${pickupOffice.city || ''}`;
+      document.getElementById('pickup-office-phone').textContent = pickupOffice.phone || 'N/A';
+      document.getElementById('pickup-office-reference').textContent = pickupOffice.locationReference || 'N/A';
+    }
+    
+    if (dropoffOffice) {
+      const dropoffDetails = document.getElementById('dropoff-office-details');
+      if (dropoffDetails) dropoffDetails.classList.remove('hidden');
+      document.getElementById('dropoff-office-address').textContent = `${dropoffOffice.address || ''}, ${dropoffOffice.city || ''}`;
+      document.getElementById('dropoff-office-phone').textContent = dropoffOffice.phone || 'N/A';
+      document.getElementById('dropoff-office-reference').textContent = dropoffOffice.locationReference || 'N/A';
+    }
     
     document.getElementById('res-date-start').textContent = formatDate(reservation.startTime);
     document.getElementById('res-time-start').textContent = formatTime(reservation.startTime);
@@ -125,6 +163,9 @@ async function loadReservationDetails(reservation) {
 
     // Real times
     updateRealTimes(reservation);
+
+    // Show pickup window information for debugging
+    showPickupWindowInfo(reservation);
 
     // Setup open vehicle button
     const openVehicleBtn = document.getElementById('open-vehicle-btn');
@@ -137,7 +178,39 @@ async function loadReservationDetails(reservation) {
       else if (reservation.actualPickupTime) {
         showVehiclePickedUpState();
       } else {
-        openVehicleBtn.addEventListener('click', handleOpenVehicle);
+        // Check if pickup is allowed now
+        const currentTime = new Date();
+        const startTime = new Date(reservation.startTime);
+        const oneHourBefore = new Date(startTime.getTime() - 60 * 60 * 1000);
+        const oneHourAfter = new Date(startTime.getTime() + 60 * 60 * 1000);
+        const canPickupNow = currentTime >= oneHourBefore && currentTime <= oneHourAfter;
+        
+        if (!canPickupNow) {
+          // Update button to show timing info
+          const timeToWait = oneHourBefore > currentTime ? 
+            Math.ceil((oneHourBefore - currentTime) / (1000 * 60)) : 
+            0;
+          
+          if (timeToWait > 0) {
+            openVehicleBtn.disabled = true;
+            openVehicleBtn.classList.add('bg-gray-600', 'cursor-not-allowed');
+            openVehicleBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            openVehicleBtn.innerHTML = `
+              <span class="material-icons">schedule</span>
+              Disponible en ${timeToWait} minutos
+            `;
+          } else if (currentTime > oneHourAfter) {
+            openVehicleBtn.disabled = true;
+            openVehicleBtn.classList.add('bg-red-600', 'cursor-not-allowed');
+            openVehicleBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            openVehicleBtn.innerHTML = `
+              <span class="material-icons">schedule_send</span>
+              Ventana de retiro expirada
+            `;
+          }
+        } else {
+          openVehicleBtn.addEventListener('click', handleOpenVehicle);
+        }
       }
     }
 
@@ -170,6 +243,23 @@ function updateRealTimes(reservation) {
   }
 }
 
+function showPickupWindowInfo(reservation) {
+  const currentTime = new Date();
+  const startTime = new Date(reservation.startTime);
+  const oneHourBefore = new Date(startTime.getTime() - 60 * 60 * 1000);
+  const oneHourAfter = new Date(startTime.getTime() + 60 * 60 * 1000);
+  
+  console.log('=== INFORMACIÓN DE VENTANA DE PICKUP ===');
+  console.log('Hora actual:', currentTime.toLocaleString('es-AR'));
+  console.log('Inicio de reserva:', startTime.toLocaleString('es-AR'));
+  console.log('Ventana de pickup desde:', oneHourBefore.toLocaleString('es-AR'));
+  console.log('Ventana de pickup hasta:', oneHourAfter.toLocaleString('es-AR'));
+  console.log('Puede hacer pickup ahora:', currentTime >= oneHourBefore && currentTime <= oneHourAfter);
+  console.log('Estado de la reserva:', reservation.status);
+  console.log('¿Ya retirado?:', !!reservation.actualPickupTime);
+  console.log('=======================================');
+}
+
 async function handleOpenVehicle() {
   const btn = document.getElementById('open-vehicle-btn');
   const originalContent = btn.innerHTML;
@@ -182,47 +272,81 @@ async function handleOpenVehicle() {
       Abriendo vehículo...
     `;
     
-    // Debug info
+    // Debug info about timing
     const currentTime = new Date();
     const startTime = new Date(window.currentReservation.startTime);
-    const oneHourBefore = new Date(startTime.getTime() - 60 * 60 * 1000);
-    const oneHourAfter = new Date(currentTime.getTime() + 60 * 60 * 1000);
+    const oneHourBeforeStart = new Date(startTime.getTime() - 60 * 60 * 1000);
+    const oneHourAfterStart = new Date(startTime.getTime() + 60 * 60 * 1000);
     
     console.log('Pickup validation debug:', {
       reservationId: window.currentReservation.reservationId,
       status: window.currentReservation.status,
-      startTime: window.currentReservation.startTime,
-      startTimeParsed: startTime.toISOString(),
       currentTime: currentTime.toISOString(),
-      oneHourBeforeStart: oneHourBefore.toISOString(),
-      oneHourAfterNow: oneHourAfter.toISOString(),
-      actualPickupTime: window.currentReservation.actualPickupTime,
-      isCurrentBeforeLimit: currentTime < oneHourBefore,
-      isCurrentAfterLimit: currentTime > oneHourAfter,
+      startTime: startTime.toISOString(),
+      oneHourBeforeStart: oneHourBeforeStart.toISOString(),
+      oneHourAfterStart: oneHourAfterStart.toISOString(),
+      canPickupFrom: oneHourBeforeStart.toLocaleString('es-AR'),
+      canPickupUntil: oneHourAfterStart.toLocaleString('es-AR'),
+      currentTimeLocal: currentTime.toLocaleString('es-AR'),
+      isWithinWindow: currentTime >= oneHourBeforeStart && currentTime <= oneHourAfterStart,
       timezoneOffset: currentTime.getTimezoneOffset()
     });
     
     // Call pickup API (backend handles all the data)
     const updatedReservation = await pickupReservation(window.currentReservation.reservationId);
     
-    // Update the reservation object with response from backend
-    window.currentReservation = { ...window.currentReservation, ...updatedReservation };
+    // Store the reservation ID for the progress page
+    localStorage.setItem('inProgressReservationId', window.currentReservation.reservationId);
     
-    // Update the real times display
-    updateRealTimes(window.currentReservation);
-    
-    // Show success state and change to return button
-    showVehiclePickedUpState();
+    // Redirect to progress page
+    window.location.href = 'reserva-progreso.html';
     
   } catch (error) {
     console.error('Error during vehicle pickup:', error);
     console.error('Full error details:', {
       message: error.message,
-      stack: error.stack
+      reservationDetails: window.currentReservation
     });
+    
     btn.disabled = false;
     btn.innerHTML = originalContent;
-    alert('Error al abrir el vehículo: ' + error.message);
+    
+    // Show detailed error information based on timing
+    if (error.message.includes('409') || error.message.includes('Conflicto') || error.message.includes('hora de retiro')) {
+      const currentTime = new Date();
+      const startTime = new Date(window.currentReservation.startTime);
+      const oneHourBefore = new Date(startTime.getTime() - 60 * 60 * 1000);
+      const oneHourAfter = new Date(startTime.getTime() + 60 * 60 * 1000);
+      
+      const currentLocal = currentTime.toLocaleString('es-AR', { 
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit' 
+      });
+      const canPickupFrom = oneHourBefore.toLocaleString('es-AR', { 
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit' 
+      });
+      const canPickupUntil = oneHourAfter.toLocaleString('es-AR', { 
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit' 
+      });
+      
+      alert(`No se puede recoger el vehículo en este momento.
+
+📅 Hora actual: ${currentLocal}
+📅 Inicio de reserva: ${startTime.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+
+⏰ Ventana de retiro permitida:
+   Desde: ${canPickupFrom}
+   Hasta: ${canPickupUntil}
+
+${currentTime < oneHourBefore ? '⚠️ Es muy temprano para recoger el vehículo.' : ''}
+${currentTime > oneHourAfter ? '⚠️ Es muy tarde para recoger el vehículo.' : ''}
+
+Detalle técnico: ${error.message}`);
+    } else {
+      alert('Error al abrir el vehículo: ' + error.message);
+    }
   }
 }
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reserva Confirmada</title>
+  <title>Reserva Completada</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="../css/proxima-reserva.css">
@@ -22,14 +22,14 @@
   <div id="page-loading" class="page-loading">
     <div class="text-center">
       <div class="spinner mx-auto mb-4 w-8 h-8 border-4 border-gray-600 border-t-white"></div>
-      <p class="text-white">Cargando reserva confirmada...</p>
+      <p class="text-white">Cargando reserva completada...</p>
     </div>
   </div>
   <div class="max-w-md mx-auto bg-main shadow-lg min-h-screen">
     <!-- Header -->
     <div class="bg-green-600 text-white p-4 flex items-center gap-3">
-      <span class="material-icons text-2xl">check_circle</span>
-      <h1 class="text-2xl font-bold">Reserva Confirmada</h1>
+      <span class="material-icons text-2xl">done_all</span>
+      <h1 class="text-2xl font-bold">Reserva Completada</h1>
     </div>
     <!-- Imagen -->
     <div class="relative">
@@ -41,11 +41,11 @@
       </div>
     </div>
     <div class="p-4 space-y-4">
-      <!-- Mensaje de confirmación -->
+      <!-- Mensaje de completado -->
       <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center">
-        <span class="material-icons text-green-400 text-3xl mb-2 block">check_circle</span>
-        <h2 class="text-green-400 font-semibold text-lg mb-1">¡Reserva Confirmada!</h2>
-        <p class="text-gray-300 text-sm">Tu reserva ha sido confirmada exitosamente. Ya puedes retirar tu vehículo.</p>
+        <span class="material-icons text-green-400 text-3xl mb-2 block">done_all</span>
+        <h2 class="text-green-400 font-semibold text-lg mb-1">¡Reserva Completada!</h2>
+        <p class="text-gray-300 text-sm">Has devuelto el vehículo exitosamente. Gracias por usar nuestro servicio.</p>
       </div>
 
       <!-- Datos del Vehículo -->
@@ -178,28 +178,29 @@
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <span class="text-sm text-gray-400">Retiro Real</span>
-                  <p id="res-date-real-start" class="font-medium text-gray-500">-</p>
-                  <p id="res-time-real-start" class="text-sm text-gray-500">-</p>
+                  <p id="res-date-real-start" class="font-medium text-white">-</p>
+                  <p id="res-time-real-start" class="text-sm text-gray-300">-</p>
                 </div>
                 <div>
                   <span class="text-sm text-gray-400">Devolución Real</span>
-                  <p id="res-date-real-end" class="font-medium text-gray-500">-</p>
-                  <p id="res-time-real-end" class="text-sm text-gray-500">-</p>
+                  <p id="res-date-real-end" class="font-medium text-white">-</p>
+                  <p id="res-time-real-end" class="text-sm text-gray-300">-</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <!-- Botón de Acción Principal -->
-      <div class="pt-4 space-y-4">
-        <button id="open-vehicle-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
-          <span class="material-icons">nfc</span>
-          Acercar al Vehículo (NFC)
+      
+      <!-- Botón Ir a pagar -->
+      <div class="pt-4">
+        <button id="go-to-payment-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
+          <span class="material-icons">payment</span>
+          Ir a Pagar
         </button>
       </div>
     </div>
   </div>
-  <script type="module" src="../js/views/reserva-confirmada.js"></script>
+  <script type="module" src="../js/views/reserva-completada.js"></script>
 </body>
 </html>
