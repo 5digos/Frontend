@@ -8,7 +8,7 @@ export async function login(email, password) {
   });
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || "Login failed");
+    throw new Error(error.message || "Inicio de sesión fallido");
   }
   const data = await res.json();
   return data;
@@ -40,7 +40,7 @@ export async function register(firstName, lastName, email, dni, password) {
   });
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || "Register failed");
+    throw new Error(error.message || "Registro fallido");
   }
   return await res.json();
 }
@@ -54,7 +54,7 @@ export async function verifyEmail(email, verificationCode) {
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || "Verification failed");
+    throw new Error(error.message || "Verificación de email fallida");
   }
 
   return await res.json();
@@ -85,7 +85,111 @@ export async function refreshToken(expiredAccessToken, refreshToken) {
   });
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.message || "Token refresh failed");
+    throw new Error(error.message || "Token de actualización fallido");
   }
+  return await res.json();
+}
+
+export async function requestPasswordReset(email) {
+  const res = await fetch(`${BASE_URL}/Auth/PasswordResetRequest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(
+      error.message || "No se pudo enviar el email de recuperación"
+    );
+  }
+
+  return await res.json();
+}
+
+export async function confirmPasswordReset(email, resetCode, newPassword) {
+  const res = await fetch(`${BASE_URL}/Auth/PasswordResetConfirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, resetCode, newPassword }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "No se pudo restablecer la contraseña");
+  }
+
+  return await res.json();
+}
+
+export async function getUserById(userId, accessToken) {
+  const res = await fetch(`${BASE_URL}/User/${userId}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "No se pudo obtener el usuario");
+  }
+
+  return await res.json();
+}
+
+export async function updateUser(userId, updatedData, accessToken) {
+  const res = await fetch(`${BASE_URL}/User/${userId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(updatedData),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "No se pudo actualizar el usuario");
+  }
+
+  return await res.json();
+}
+
+export async function changePassword(
+  currentPassword,
+  newPassword,
+  accessToken
+) {
+  const res = await fetch(`${BASE_URL}/Auth/ChangePassword`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      currentPassword,
+      newPassword,
+    }),
+  });
+
+  if (!res.ok) {
+    let errorMessage = "No se pudo cambiar la contraseña";
+    try {
+      const error = await res.json();
+      console.error("Respuesta con error 400:", error);
+
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.errors?.NewPassword?.length > 0) {
+        errorMessage = error.errors.NewPassword[0];
+      }
+    } catch (e) {
+      const fallback = await res.text();
+      console.warn("Respuesta no JSON:", fallback);
+      if (fallback) errorMessage = fallback;
+    }
+    throw new Error(errorMessage);
+  }
+
   return await res.json();
 }

@@ -4,264 +4,545 @@ import {
   logout,
   verifyEmail,
   resendVerificationEmail,
+  requestPasswordReset,
+  confirmPasswordReset,
 } from "./api/auth.js";
+import { getAuthenticated } from "./state.js";
 import { loadLoginView, initializeApp } from "./main.js";
-import { getAuthenticated, setAuthenticated } from "./state.js";
+import { showSpinner, hideSpinner } from "./components/spinners.js";
 
-let emailToVerify = null;
-let tempPassword = null;
+let formContainer;
+let loginTab;
+let registerTab;
+let tabs;
 
-export function setupAuthForm() {
-  const form = document.getElementById("auth-form");
-  if (!form) return;
-
-  const newForm = form.cloneNode(true);
-  form.parentNode.replaceChild(newForm, form);
-
-  newForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const loginTabActive = document
-      .getElementById("login-tab")
-      .classList.contains("text-red-600");
-
-    if (loginTabActive) {
-      const email = newForm.querySelector("#email").value.trim();
-      const password = newForm.querySelector("#password").value.trim();
-
-      try {
-        const data = await login(email, password);
-        localStorage.setItem("token", data.accessToken);
-        localStorage.setItem("refreshToken", data.refreshToken);
-        setAuthenticated(true);
-        initializeApp();
-      } catch (error) {
-        alert(error.message || "Error en login");
-      }
-    } else {
-      const codeInput = newForm.querySelector("#verificationCode");
-      if (codeInput) {
-        const code = codeInput.value.trim();
-        try {
-          await verifyEmail(emailToVerify, code);
-
-          const loginData = await login(emailToVerify, tempPassword);
-          localStorage.setItem("token", loginData.accessToken);
-          localStorage.setItem("refreshToken", loginData.refreshToken);
-          alert("Email verificado y sesión iniciada con éxito.");
-
-          initializeApp();
-        } catch (error) {
-          alert(error.message || "Código incorrecto");
-        }
-        return;
-      }
-
-      const firstName = newForm.querySelector("#firstName").value.trim();
-      const lastName = newForm.querySelector("#lastName").value.trim();
-      const dni = newForm.querySelector("#dni").value.trim();
-      const email = newForm.querySelector("#email").value.trim();
-      const password = newForm.querySelector("#password").value.trim();
-      const confirmPassword = newForm
-        .querySelector("#confirmPassword")
-        .value.trim();
-
-      if (password !== confirmPassword) {
-        alert("Las contraseñas no coinciden");
-        return;
-      }
-
-      try {
-        await register(firstName, lastName, email, dni, password);
-        emailToVerify = email;
-        tempPassword = password;
-        alert("Te enviamos un código de verificación a tu email");
-
-        newForm.innerHTML = `
-          <p class="text-md text-stone-800 dark:text-stone-300">
-            Se envió un código de verificación a 
-            <span class="text-black dark:text-white font-semibold">${email}</span>. Ingresalo para verificar tu cuenta.
-          </p>
-          <input type="text" id="verificationCode" class="${inputFieldClass}" placeholder="Código de verificación" required autocomplete="off"/>
-          <button type="submit" class="${submitButtonClass}">Verificar Email</button>
-          <p class="mt-2 text-sm text-stone-700 dark:text-stone-300 cursor-pointer hover:underline text-center" id="resendCode">
-          ¿No te llegó el código? <span class="text-black dark:text-white font-semibold">Reenviar</span>
-          </p>
-          `;
-
-        // 🆕 Reenviar código de verificación
-        document
-          .getElementById("resendCode")
-          .addEventListener("click", async () => {
-            try {
-              await resendVerificationEmail(email);
-              alert("Se reenvió el código de verificación a tu email.");
-            } catch (error) {
-              alert(error.message || "Error al reenviar el código");
-            }
-          });
-      } catch (error) {
-        alert(error.message || "Error en registro");
-      }
-    }
-
-    // 🆕 Activar funcionalidad de mostrar/ocultar contraseña después de renderizar el form
-    setupPasswordToggles();
-  });
-
-  // 🆕 También ejecutar por si ya hay inputs en este form inicial
-  setupPasswordToggles();
-}
-
-// tabs de login/register
+// cargar tabs
 export function setupAuthTabs() {
-  const loginTab = document.getElementById("login-tab");
-  const registerTab = document.getElementById("register-tab");
-  const form = document.getElementById("auth-form");
-
-  if (!loginTab || !registerTab || !form) return;
+  formContainer = document.getElementById("auth-form");
+  loginTab = document.getElementById("login-tab");
+  registerTab = document.getElementById("register-tab");
+  tabs = document.querySelectorAll(".tab-button");
 
   loginTab.addEventListener("click", (e) => {
     e.preventDefault();
-    setActiveTab("login");
+    switchTab("login");
   });
 
   registerTab.addEventListener("click", (e) => {
     e.preventDefault();
-    setActiveTab("register");
+    switchTab("register");
   });
 
-  function setActiveTab(tab) {
-    const activeClasses = [
-      "text-red-600",
-      "border-red-600",
-      "dark:text-red-500",
-      "dark:border-red-500",
-    ];
-    const inactiveClasses = [
-      "text-stone-900",
-      "border-b-transparent",
-      "hover:text-stone-950",
-      "dark:text-stone-400",
-      "dark:hover:text-white",
-    ];
+  switchTab("login");
+}
 
-    if (tab === "login") {
-      loginTab.classList.add(...activeClasses);
-      loginTab.classList.remove(...inactiveClasses);
+// cambiar de tab login/register
+function switchTab(tab) {
+  tabs.forEach((tabEl) => {
+    tabEl.classList.remove(...tabActiveClasses);
+    tabEl.classList.add(...tabInactiveClasses);
+  });
 
-      registerTab.classList.remove(...activeClasses);
-      registerTab.classList.add(...inactiveClasses);
-    } else {
-      registerTab.classList.add(...activeClasses);
-      registerTab.classList.remove(...inactiveClasses);
+  const activeTabEl = tab === "login" ? loginTab : registerTab;
+  activeTabEl.classList.remove(...tabInactiveClasses);
+  activeTabEl.classList.add(...tabActiveClasses);
 
-      loginTab.classList.remove(...activeClasses);
-      loginTab.classList.add(...inactiveClasses);
+  if (tab === "login") {
+    renderLoginForm();
+  } else {
+    renderRegisterForm();
+  }
+}
+
+// login
+function renderLoginForm() {
+  setAuthTabMode("login-register");
+  formContainer.innerHTML = `
+    <input
+      type="email"
+      id="login-email"
+      placeholder="Email"
+      class="${inputFieldClass}"
+      autocomplete="off"
+      required
+    />
+    <div class="password-input-wrapper relative">
+      <input
+        type="password"
+        id="login-password"
+        placeholder="Contraseña"
+        class="${inputFieldClass} pr-10"
+        required
+      />
+      <button
+        type="button"
+        class="password-toggle absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+        aria-label="Mostrar contraseña"
+      >
+        <i class="fa-solid fa-eye text-stone-300"></i>
+      </button>
+    </div>
+    <p id="login-error" class="text-red-500 text-sm hidden">Email y/o contraseña incorrectos</p>
+    <button
+      type="submit"
+      class="${submitButtonClass}"
+    >
+      Iniciar Sesión
+    </button>
+    <p class="text-sm text-center mt-2">
+      ¿Problemas para iniciar sesión?
+      <a href="#" id="go-to-reset" class="text-red-500 hover:underline">Restablecer contraseña</a>
+    </p>
+  `;
+
+  formContainer.onsubmit = async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+
+    await handleLogin(email, password);
+  };
+
+  document.getElementById("go-to-reset").addEventListener("click", (e) => {
+    e.preventDefault();
+    renderResetPasswordStep1();
+  });
+
+  setupPasswordToggles();
+}
+// manejar login
+async function handleLogin(email, password) {
+  try {
+    showSpinner();
+    const data = await login(email, password);
+    localStorage.setItem("token", data.accessToken);
+    localStorage.setItem("refreshToken", data.refreshToken);
+    getAuthenticated(true);
+    await initializeApp();
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    hideSpinner();
+  }
+}
+
+// recuperar contraseña step1
+function renderResetPasswordStep1() {
+  setAuthTabMode("reset");
+  formContainer.innerHTML = `
+  <p class="text-center text-stone-300 mb-4">Introduce tu correo electronico, te enviaremos un codigo para poder cambiar tu contraseña.</p>
+    <input
+      type="email"
+      id="reset-email"
+      placeholder="Email"
+      class="${inputFieldClass}"
+      autocomplete="off"
+      required
+    />
+    <p id="reset-step1-error" class="text-red-500 text-sm hidden mt-1"></p>
+    <button type="submit" class="${submitButtonClass}">Enviar código</button>
+    <p class="text-sm text-center mt-1">
+      <a href="#" id="back-to-login" class="text-white hover:underline">Volver al <span class="text-black dark:text-white font-semibold">login</span></a>
+    </p>
+  `;
+
+  formContainer.onsubmit = async (event) => {
+    event.preventDefault();
+    const email = document.getElementById("reset-email").value.trim();
+    const errorEl = document.getElementById("reset-step1-error");
+
+    try {
+      showSpinner();
+      await requestPasswordReset(email);
+      renderResetPasswordStep2(email);
+    } catch (error) {
+      errorEl.textContent =
+        error.message || "Hubo un error al enviar el código";
+      errorEl.classList.remove("hidden");
+    } finally {
+      hideSpinner();
+    }
+  };
+
+  document.getElementById("back-to-login").addEventListener("click", (e) => {
+    e.preventDefault();
+    renderLoginForm();
+  });
+}
+
+// recuperar contraseña step2
+function renderResetPasswordStep2(email) {
+  formContainer.innerHTML = `
+    <p id="reset-instructions" class="text-center mb-4">
+      Se envió un código a <strong>${email}</strong>. Ingresalo junto con tu nueva contraseña.
+    </p>
+
+    <input
+      type="text"
+      id="reset-code"
+      placeholder="Código de verificación"
+      class="${inputFieldClass}"
+      autocomplete="off"
+      required
+    />
+
+    <div class="password-input-wrapper relative">
+      <input
+        type="password"
+        id="reset-new-password"
+        placeholder="Nueva contraseña"
+        class="${inputFieldClass} pr-10"
+        required
+      />
+      <button
+        type="button"
+        class="password-toggle absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+        aria-label="Mostrar contraseña"
+      >
+        <i class="fa-solid fa-eye text-stone-300"></i>
+      </button>
+    </div>
+
+    <div class="password-input-wrapper relative mt-2">
+      <input
+        type="password"
+        id="reset-confirm-password"
+        placeholder="Confirmar contraseña"
+        class="${inputFieldClass} pr-10"
+        required
+      />
+      <button
+        type="button"
+        class="password-toggle absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+        aria-label="Mostrar contraseña"
+      >
+        <i class="fa-solid fa-eye text-stone-300"></i>
+      </button>
+    </div>
+
+    <p id="code-error" class="text-red-500 text-sm hidden mt-1"></p>
+    <p id="match-error" class="text-red-500 text-sm hidden mt-1"></p>
+    <p id="strength-error" class="text-red-500 text-sm hidden mt-1"></p>
+
+    <button type="submit" class="${submitButtonClass}">Restablecer contraseña</button>
+
+    <p class="text-sm text-center mt-2">
+      ¿No te llegó el código?
+      <a href="#" id="resend-reset-code" class="text-red-500 hover:underline">Reenviar</a>
+    </p>
+
+    <p class="text-sm text-center mt-1">
+      <a href="#" id="back-to-login" class="text-white hover:underline">Volver al <span class="text-black dark:text-white font-semibold">login</span></a>
+    </p>
+  `;
+
+  formContainer.onsubmit = async (event) => {
+    event.preventDefault();
+
+    const code = document.getElementById("reset-code").value.trim();
+    const password = document.getElementById("reset-new-password").value;
+    const confirm = document.getElementById("reset-confirm-password").value;
+
+    const codeError = document.getElementById("code-error");
+    const matchError = document.getElementById("match-error");
+    const strengthError = document.getElementById("strength-error");
+
+    codeError.classList.add("hidden");
+    matchError.classList.add("hidden");
+    strengthError.classList.add("hidden");
+
+    if (password !== confirm) {
+      matchError.textContent = "Las contraseñas no coinciden";
+      matchError.classList.remove("hidden");
+      return;
     }
 
-    document.getElementById("auth-form").innerHTML =
-      tab === "login" ? getLoginForm() : getRegisterForm();
+    if (!validatePasswordStrength(password)) {
+      strengthError.textContent =
+        "La contraseña debe tener al menos 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y un caracter especial";
+      strengthError.classList.remove("hidden");
+      return;
+    }
 
-    setupAuthForm(); // reiniciar el form
-  }
+    try {
+      showSpinner();
+      await confirmPasswordReset(email, code, password);
 
-  function getLoginForm() {
-    return `
-    <input type="email" id="email" class="${inputFieldClass}" placeholder="Email" required autocomplete="off" />
+      renderLoginForm();
 
-    <div class="relative">
-      <input type="password" id="password" class="${inputFieldClass} pr-10" placeholder="Contraseña" required autocomplete="off" />
-      <button type="button" id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-stone-600 dark:text-stone-300 cursor-pointer">
-        <i class="fa-solid fa-eye" id="eyeIcon"></i>
+      const messageEl = document.createElement("p");
+      messageEl.textContent =
+        "Contraseña restablecida correctamente. Por favor, inicia sesión nuevamente.";
+      messageEl.className = "text-stone-200 text-center mb-3";
+
+      formContainer.prepend(messageEl);
+    } catch (error) {
+      codeError.textContent = error.message || "Código incorrecto";
+      codeError.classList.remove("hidden");
+    } finally {
+      hideSpinner();
+    }
+  };
+
+  document.getElementById("back-to-login").addEventListener("click", (e) => {
+    e.preventDefault();
+    renderLoginForm();
+  });
+
+  document
+    .getElementById("resend-reset-code")
+    .addEventListener("click", async (e) => {
+      e.preventDefault();
+      const instructionsEl = document.getElementById("reset-instructions");
+
+      try {
+        showSpinner();
+        await requestPasswordReset(email);
+        instructionsEl.innerHTML = `
+        Se <span class="text-red-500 font-bold">reenvió</span> un código a <strong>${email}</strong>. Ingresalo junto con tu nueva contraseña.
+      `;
+      } catch (error) {
+        instructionsEl.innerHTML = `
+        <span class="text-red-500 font-semibold">Error:</span> ${
+          error.message || "No se pudo reenviar el código."
+        }
+      `;
+      } finally {
+        hideSpinner();
+      }
+    });
+
+  setupPasswordToggles();
+}
+
+// register
+function renderRegisterForm() {
+  setAuthTabMode("login-register");
+  formContainer.innerHTML = `
+    <input type="text" id="register-firstname" placeholder="Nombre" class="${inputFieldClass}" required />
+    <input type="text" id="register-lastname" placeholder="Apellido" class="${inputFieldClass}" required />
+    <input type="number" id="register-dni" placeholder="DNI" class="${inputFieldClass}" required />
+    <input type="email" id="register-email" placeholder="Email" class="${inputFieldClass}" required />
+
+    <div class="password-input-wrapper relative">
+      <input type="password" id="register-password" placeholder="Contraseña" class="${inputFieldClass} pr-10" required />
+      <button type="button" class="password-toggle absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer">
+        <i class="fa-solid fa-eye text-stone-300"></i>
       </button>
     </div>
 
-    <button type="submit" class="${submitButtonClass}">Iniciar sesión</button>
-  `;
-  }
-
-  function getRegisterForm() {
-    return `
-    <input type="text" id="firstName" class="${inputFieldClass}" placeholder="Nombre" required autocomplete="off"/>
-    <input type="text" id="lastName" class="${inputFieldClass}" placeholder="Apellido" required autocomplete="off"/>
-    <input type="number" id="dni" class="${inputFieldClass}" placeholder="DNI" required autocomplete="off"/>
-    <input type="email" id="email" class="${inputFieldClass}" placeholder="Email" required autocomplete="off"/>
-    
-    <div class="relative">
-      <input type="password" id="password" class="${inputFieldClass} pr-10" placeholder="Contraseña" required autocomplete="off"/>
-      <button type="button" id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-stone-600 dark:text-stone-300 cursor-pointer">
-        <i class="fa-solid fa-eye" id="eyeIcon"></i>
+    <div class="password-input-wrapper relative mt-2">
+      <input type="password" id="register-confirm-password" placeholder="Confirmar contraseña" class="${inputFieldClass} pr-10" required />
+      <button type="button" class="password-toggle absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer">
+        <i class="fa-solid fa-eye text-stone-300"></i>
       </button>
     </div>
 
-    <div class="relative">
-      <input type="password" id="confirmPassword" class="${inputFieldClass} pr-10" placeholder="Confirmar contraseña" required autocomplete="off"/>
-      <button type="button" id="toggleConfirmPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-stone-600 dark:text-stone-300 cursor-pointer">
-        <i class="fa-solid fa-eye" id="eyeConfirmPassword"></i>
-      </button>
-    </div>
+    <p id="match-error" class="text-red-500 text-sm hidden mt-1"></p>
+    <p id="strength-error" class="text-red-500 text-sm hidden mt-1"></p>
+    <p id="register-error" class="text-red-500 text-sm hidden mt-1"></p>
 
     <button type="submit" class="${submitButtonClass}">Registrarse</button>
   `;
-  }
 
-  setActiveTab("login");
+  formContainer.onsubmit = async (event) => {
+    event.preventDefault();
+    const firstname = document
+      .getElementById("register-firstname")
+      .value.trim();
+    const lastname = document.getElementById("register-lastname").value.trim();
+    const dni = document.getElementById("register-dni").value.trim();
+    const email = document.getElementById("register-email").value.trim();
+    const password = document.getElementById("register-password").value;
+    const confirm = document.getElementById("register-confirm-password").value;
+
+    const matchError = document.getElementById("match-error");
+    const strengthError = document.getElementById("strength-error");
+
+    matchError.classList.add("hidden");
+    strengthError.classList.add("hidden");
+
+    if (password !== confirm) {
+      matchError.textContent = "Las contraseñas no coinciden";
+      matchError.classList.remove("hidden");
+      return;
+    }
+
+    if (!validatePasswordStrength(password)) {
+      strengthError.textContent =
+        "La contraseña debe tener al menos 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y un caracter especial";
+      strengthError.classList.remove("hidden");
+      return;
+    }
+
+    try {
+      showSpinner();
+      await register(firstname, lastname, email, dni, password);
+      renderVerifyEmailView(email);
+    } catch (error) {
+      const registerError = document.getElementById("register-error");
+      registerError.textContent = error.message || "Error al registrarse";
+      registerError.classList.remove("hidden");
+    } finally {
+      hideSpinner();
+    }
+  };
+
+  setupPasswordToggles();
 }
 
-// 🆕 Función para activar toggle en todos los campos de contraseña
-function setupPasswordToggles() {
-  const toggleConfigs = [
-    { inputId: "password", buttonId: "togglePassword", iconId: "eyeIcon" },
-    {
-      inputId: "confirmPassword",
-      buttonId: "toggleConfirmPassword",
-      iconId: "eyeConfirmPassword",
-    },
-  ];
+// verificar email
+function renderVerifyEmailView(email) {
+  setAuthTabMode("login-register");
+  formContainer.innerHTML = `
+    <p id="verify-instructions" class="text-center mb-4">
+      Se envió un código de verificación a <strong>${email}</strong>. Ingresalo para verificar tu cuenta.
+    </p>
+    <input
+      type="text"
+      id="verify-code"
+      placeholder="Código"
+      class="${inputFieldClass}"
+      autocomplete="off"
+      required
+    />
+    <p id="verify-error" class="text-red-500 text-sm hidden mt-1"></p>
+    <button type="submit" class="${submitButtonClass}">Verificar Email</button>
+    <p class="text-sm text-center mt-2">
+      ¿No te llegó el código?
+      <a href="#" id="resend-code" class="text-red-500 hover:underline">Reenviar</a>
+    </p>
+  `;
 
-  toggleConfigs.forEach(({ inputId, buttonId, iconId }) => {
-    const input = document.getElementById(inputId);
-    const button = document.getElementById(buttonId);
-    const icon = document.getElementById(iconId);
+  formContainer.onsubmit = async (event) => {
+    event.preventDefault();
+    const code = document.getElementById("verify-code").value.trim();
+    const errorEl = document.getElementById("verify-error");
 
-    if (input && button) {
-      button.addEventListener("click", () => {
-        const isPassword = input.type === "password";
-        input.type = isPassword ? "text" : "password";
+    errorEl.classList.add("hidden");
 
-        if (icon) {
-          icon.classList.toggle("fa-eye");
-          icon.classList.toggle("fa-eye-slash");
-        }
-      });
+    try {
+      showSpinner();
+      await verifyEmail(email, code);
+
+      renderLoginForm();
+
+      const messageEl = document.createElement("p");
+      messageEl.textContent = "Registro exitoso. Por favor, inicia sesión.";
+      messageEl.className = "text-stone-200 text-center mb-3";
+
+      formContainer.prepend(messageEl);
+    } catch (error) {
+      errorEl.textContent = error.message || "Código incorrecto";
+      errorEl.classList.remove("hidden");
+    } finally {
+      hideSpinner();
     }
+  };
+
+  document
+    .getElementById("resend-code")
+    .addEventListener("click", async (e) => {
+      e.preventDefault();
+      const instructionsEl = document.getElementById("verify-instructions");
+
+      try {
+        showSpinner();
+        await resendVerificationEmail(email);
+        instructionsEl.innerHTML = `
+        Se <span class="text-red-500 font-bold">reenvió</span> un código de verificación a <strong>${email}</strong>. Ingresalo para verificar tu cuenta.
+      `;
+      } catch (error) {
+        instructionsEl.innerHTML = `
+        <span class="text-red-500 font-semibold">Error:</span> ${
+          error.message || "No se pudo reenviar el código."
+        }
+      `;
+      } finally {
+        hideSpinner();
+      }
+    });
+}
+
+// ocultar/mostrar contraseña
+export function setupPasswordToggles() {
+  const toggles = document.querySelectorAll(".password-toggle");
+
+  toggles.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const wrapper = btn.closest(".password-input-wrapper");
+      if (!wrapper) return;
+
+      const input = wrapper.querySelector("input");
+      if (!input) return;
+
+      const icon = btn.querySelector("i");
+      const isPassword = input.type === "password";
+
+      input.type = isPassword ? "text" : "password";
+
+      if (icon) {
+        icon.classList.toggle("fa-eye");
+        icon.classList.toggle("fa-eye-slash");
+      }
+
+      btn.setAttribute(
+        "aria-label",
+        isPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+      );
+    });
   });
 }
 
-export const inputFieldClass = `border border-stone-300 text-stone-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:border-stone-600 dark:placeholder-stone-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`;
-export const submitButtonClass = `w-full p-2 mt-2 bg-red-500 hover:bg-red-600 rounded shadow-lg cursor-pointer`;
-
-export async function handleLogout() {
-  const refreshToken = localStorage.getItem("refreshToken");
-  const accessToken = localStorage.getItem("token");
-
-  if (!refreshToken || !accessToken) {
-    cleanupSession();
-    return;
-  }
-
-  try {
-    await logout(refreshToken, accessToken);
-  } catch (error) {
-    console.warn("Logout API error:", error.message);
-  }
-  cleanupSession();
+// validar contraseña
+function validatePasswordStrength(password) {
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+  return regex.test(password);
 }
 
-function cleanupSession() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("refreshToken");
-  setAuthenticated(false);
-  loadLoginView();
+// helpers de errores
+function showError(message) {
+  const errorEl = document.getElementById("login-error");
+  if (errorEl) {
+    errorEl.textContent = message;
+    errorEl.classList.remove("hidden");
+  } else {
+    alert(message);
+  }
 }
+
+// ocultar/mostrar tabs
+function setAuthTabMode(mode) {
+  const loginTabLi = document.getElementById("login-tab-li");
+  const registerTabLi = document.getElementById("register-tab-li");
+  const resetTabLi = document.getElementById("reset-tab-li");
+
+  if (mode === "login-register") {
+    loginTabLi?.classList.remove("hidden");
+    registerTabLi?.classList.remove("hidden");
+    resetTabLi?.classList.add("hidden");
+  } else if (mode === "reset") {
+    loginTabLi?.classList.add("hidden");
+    registerTabLi?.classList.add("hidden");
+    resetTabLi?.classList.remove("hidden");
+  }
+}
+
+// estilos
+const tabActiveClasses = [
+  "text-red-600",
+  "border-red-600",
+  "dark:text-red-500",
+  "dark:border-red-500",
+];
+const tabInactiveClasses = [
+  "text-stone-900",
+  "border-b-transparent",
+  "hover:text-stone-950",
+  "dark:text-stone-400",
+  "dark:hover:text-white",
+];
+
+const inputFieldClass = `border border-stone-300 text-stone-900 rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:border-stone-600 dark:placeholder-stone-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500`;
+const submitButtonClass = `w-full p-2 mt-2 bg-red-500 hover:bg-red-600 rounded shadow-lg cursor-pointer`;

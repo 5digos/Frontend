@@ -1,9 +1,156 @@
-<div>
-  <h1 class="text-3xl font-semibold">Cuenta</h1>
-  <button
-    id="logout-btn"
-    class="p-2 mt-2 bg-red-500 hover:bg-red-600 rounded shadow-lg cursor-pointer page-link"
+<section class="flex flex-col">
+  <div class="flex flex-row justify-between items-center">
+    <h1 class="text-3xl font-semibold p-4">Rentify</h1>
+  </div>
+  <section id="account-info" class="mx-3 p-2 bg-stone-800 rounded-lg">
+    <div class="flex flex-row justify-between items-center py-1 mb-2">
+      <h1 class="text-2xl font-semibold">Cuenta</h1>
+      <button id="edit-btn" class="cursor-pointer">
+        <i
+          class="fa-solid fa-pen mr-2 text-xl text-stone-300 hover:text-white"
+        ></i>
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <div>
+        <label class="block text-lg pb-1">Nombre</label>
+        <input
+          id="firstName"
+          name="firstName"
+          required
+          autocomplete="off"
+          class="w-2/3 w-full text-lg border border-neutral-300 rounded-md px-3 py-2 focus:outline-none focus:border-red-400 hover:border-neutral-300 transition duration-300"
+        />
+      </div>
+      <div>
+        <label class="block text-xl pb-1">Apellido</label>
+        <input
+          id="lastName"
+          name="lastName"
+          autocomplete="off"
+          required
+          class="w-2/3 w-full text-lg border border-neutral-300 rounded-md px-3 py-2 focus:outline-none focus:border-red-400 hover:border-neutral-300 transition duration-300"
+        />
+      </div>
+      <div>
+        <label class="block text-xl pb-1">Email</label>
+        <input
+          id="email"
+          name="email"
+          autocomplete="off"
+          required
+          class="w-2/3 w-full text-lg border border-neutral-300 rounded-md px-3 py-2 focus:outline-none focus:border-red-400 hover:border-neutral-300 transition duration-300"
+        />
+      </div>
+      <div>
+        <label class="block text-xl pb-1">Dni</label>
+        <input
+          id="dni"
+          name="dni"
+          autocomplete="off"
+          required
+          class="w-2/3 w-full text-lg border border-neutral-300 rounded-md px-3 py-2 focus:outline-none focus:border-red-400 hover:border-neutral-300 transition duration-300"
+        />
+      </div>
+
+      <div class="flex gap-3" id="edit-btns" style="display: none">
+        <button
+          id="cancel-btn"
+          class="p-2 w-full bg-red-500 hover:bg-red-600 rounded shadow-lg cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          id="save-btn"
+          class="p-2 w-full bg-green-500 hover:bg-green-600 rounded shadow-lg cursor-pointer"
+        >
+          Guardar
+        </button>
+      </div>
+
+      <button
+        id="change-password-btn"
+        class="p-2 w-full bg-stone-900 hover:bg-stone-950 rounded shadow-lg cursor-pointer"
+      >
+        Cambiar contraseña
+      </button>
+
+      <button
+        id="logout-btn"
+        class="p-2 w-full bg-red-500 hover:bg-red-600 rounded shadow-lg cursor-pointer page-link"
+      >
+        Cerrar sesion
+      </button>
+    </div>
+  </section>
+
+  <section
+    id="change-password"
+    class="hidden mx-3 p-2 bg-stone-800 rounded-lg my-3"
   >
-    Cerrar sesion
-  </button>
-</div>
+    <div class="flex flex-row justify-between items-center py-1 mb-2">
+      <h1 class="text-2xl font-semibold">Cambiar contraseña</h1>
+      <button id="toggle-password-visibility-btn" class="cursor-pointer">
+        <i
+          class="fa-solid fa-eye mr-2 text-xl text-stone-300 hover:text-white"
+        ></i>
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <div>
+        <label class="block text-xl pb-1">Contraseña actual</label>
+        <input
+          id="oldPassword"
+          name="oldPassword"
+          type="password"
+          required
+          placeholder="Contraseña actual"
+          class="w-2/3 w-full text-lg border border-neutral-300 rounded-md px-3 py-2 focus:outline-none focus:border-red-400 hover:border-neutral-300 transition duration-300"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xl pb-1">Nueva Contraseña</label>
+        <input
+          id="newPassword"
+          name="newPassword"
+          type="password"
+          required
+          placeholder="Nueva contraseña"
+          class="w-2/3 w-full text-lg border border-neutral-300 rounded-md px-3 py-2 focus:outline-none focus:border-red-400 hover:border-neutral-300 transition duration-300"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xl pb-1">Confirmar nueva Contraseña</label>
+        <input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          required
+          placeholder="Confirmar nueva contraseña"
+          class="w-2/3 w-full text-lg border border-neutral-300 rounded-md px-3 py-2 focus:outline-none focus:border-red-400 hover:border-neutral-300 transition duration-300"
+        />
+      </div>
+
+      <p id="password-error" class="text-red-500 text-sm mt-1 hidden"></p>
+
+      <div class="flex gap-3">
+        <button
+          id="cancel-password-btn"
+          class="p-2 w-full bg-red-500 hover:bg-red-600 rounded shadow-lg cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          id="save-password-btn"
+          class="p-2 w-full bg-green-500 hover:bg-green-600 rounded shadow-lg cursor-pointer"
+        >
+          Guardar
+        </button>
+      </div>
+    </div>
+  </section>
+</section>

@@ -9,7 +9,8 @@ import {
 } from "./reservation.js";
 import { populateHourSelects } from "./reservation.js";
 import { getSelectedBranchId } from "./state.js";
-import { initScrollToTop } from './components/scrollToTop.js';
+import { initScrollToTop } from "./components/scrollToTop.js";
+import { handleLogout, initializeAccountPage } from "./account.js";
 
 // cargar paginas
 export function loadPage(page) {
@@ -33,6 +34,9 @@ export function loadPage(page) {
           }
         });
       }
+      if (page === "account") {
+        initializeAccountPage();
+      }
       if (page === "reservation") {
         requestAnimationFrame(() => {
           populateCategorySelect();
@@ -49,7 +53,11 @@ export function loadPage(page) {
       if (page === "filtered-vehicles") {
         requestAnimationFrame(() => {
           renderVehicleCards("vehicle-cards-container");
-          initScrollToTop({ btnSelector: '#scrollToTopBtn', showAfter: 300, scrollDuration: 600 });
+          initScrollToTop({
+            btnSelector: "#scrollToTopBtn",
+            showAfter: 300,
+            scrollDuration: 600,
+          });
         });
       }
       if (page === "activity") {
@@ -71,9 +79,7 @@ export function loadPage(page) {
       }
       const logoutBtn = document.getElementById("logout-btn");
       if (logoutBtn) {
-        import("./auth-tabs.js").then(({ handleLogout }) => {
-          logoutBtn.addEventListener("click", handleLogout);
-        });
+        logoutBtn.addEventListener("click", handleLogout);
       }
     })
     .catch((err) => {

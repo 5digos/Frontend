@@ -1,4 +1,4 @@
-import { setupAuthTabs, setupAuthForm } from "./auth-tabs.js";
+import { setupAuthTabs } from "./auth-tabs.js";
 import { loadPage, setupNavLinks } from "./navigation.js";
 import { getAuthenticated } from "./state.js";
 
@@ -16,7 +16,6 @@ export function loadLoginView() {
     .then((html) => {
       document.getElementById("main").innerHTML = html;
       setupAuthTabs();
-      setupAuthForm();
     });
 }
 

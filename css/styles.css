@@ -17,10 +17,7 @@
     --card-bg-color: rgb(29, 29, 29);
     --color-red-500: oklch(63.7% 0.237 25.331);
     --color-tertiary-bg: #655c5c69;
-    --color-quaternary-bg: #1d1d1d;  
-
-    
-    
+    --color-quaternary-bg: #1d1d1d;
   }
 }
 
@@ -43,4 +40,13 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-red-500);
+}
+
+/* transicion al cambiar contraseña */
+#account-info {
+  transition: background-color 1s ease;
+}
+
+#account-info.flash-success {
+  background-color: #02922d;
 }
