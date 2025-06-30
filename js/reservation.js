@@ -307,23 +307,39 @@ export function prefillReservationForm() {
   };
 
   if (!state || Object.keys(state).length === 0) {
-    const now = new Date();
+      const now = new Date();
 
-    const rounded = new Date(now);
-    rounded.setHours(now.getHours() + 1, 0, 0, 0);
+      const rounded = new Date(now);
+      rounded.setHours(now.getHours() + 1, 0, 0, 0);
 
-    const fechaInicio = rounded.toISOString().split("T")[0];
-    const horaInicio = `${rounded.getHours().toString().padStart(2, "0")}:00`;
+      const toLocalDateString = (date) => {
+          const yyyy = date.getFullYear();
+          const mm = String(date.getMonth() + 1).padStart(2, "0"); // +1 porque enero es 0
+          const dd = String(date.getDate()).padStart(2, "0");
+          return `${yyyy}-${mm}-${dd}`;
+      };
 
-    const devolucionDate = new Date(rounded);
-    devolucionDate.setDate(devolucionDate.getDate() + 1);
-    const fechaDevolucion = devolucionDate.toISOString().split("T")[0];
+      const toLocalTimeString = (date) => {
+          const hh = String(date.getHours()).padStart(2, "0");
+          const min = String(date.getMinutes()).padStart(2, "0");
+          return `${hh}:${min}`;
+      };
 
-    setValue("fechaInicio", fechaInicio);
-    setValue("horaInicio", horaInicio);
-    setValue("fechaDevolucion", fechaDevolucion);
-    setValue("horaDevolucion", horaInicio);
-    return;
+      const fechaInicio = toLocalDateString(rounded);
+      
+      const horaInicio = toLocalTimeString(rounded);
+      console.log(fechaInicio);
+      console.log(horaInicio);
+
+      const devolucionDate = new Date(rounded);
+      devolucionDate.setDate(devolucionDate.getDate() + 1);
+      const fechaDevolucion = toLocalDateString(devolucionDate);
+
+      setValue("fechaInicio", fechaInicio);
+      setValue("horaInicio", horaInicio);
+      setValue("fechaDevolucion", fechaDevolucion);
+      setValue("horaDevolucion", horaInicio);
+      return;
   }
 
   setValue("branchInicio", state.branchInicio);
@@ -345,46 +361,81 @@ function combineDateTime(date, hour) {
 
 // función global para reservar
 export async function reservarVehiculo(vehicleId) {
-  try {
-    // Verificar autenticación
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Debes iniciar sesión para realizar una reserva.');
-      loadPage('login');
-      return;
+    try {
+        // Verificar autenticación
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Debes iniciar sesión para realizar una reserva.');
+            loadPage('login');
+            return;
+        }
+
+        // Obtener datos de la reserva desde el estado
+        const reservationData = getReservationData();
+
+        if (!reservationData || !reservationData.fechaHoraInicio || !reservationData.fechaHoraDevolucion) {
+            alert('Error: No se encontraron datos de la reserva. Por favor, vuelve a realizar la búsqueda.');
+            loadPage('reservation');
+            return;
+        }
+
+        // Mostrar modal de confirmación
+        let modal = document.getElementById('modal-reservar-vehiculo');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'modal-reservar-vehiculo';
+            modal.innerHTML = `
+          <div class="modal-overlay" style="position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;">
+            <div class="modal-content" style="background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);">
+              <h2 style="font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:var(--color-red-500,#e53935);">¿Proceder a crear una nueva reserva?</h2>
+              <div style="display:flex;gap:1rem;justify-content:center;">
+                <button id="modal-reservar-si" style="background:var(--color-red-500,#e53935);color:white;padding:0.5rem 1.5rem;border:none;border-radius:0.5rem;font-weight:bold;transition:filter .2s;">Sí</button>
+                <button id="modal-reservar-no" style="background:transparent;color:var(--color-red-500,#e53935);border:1px solid var(--color-red-500,#e53935);padding:0.5rem 1.5rem;border-radius:0.5rem;font-weight:bold;transition:background .2s,color .2s;">No</button>
+              </div>
+            </div>
+          </div>
+          `;
+            document.body.appendChild(modal);
+            // Hover styles
+            const style = document.createElement('style');
+            style.innerHTML = `
+           #modal-reservar-vehiculo #modal-reservar-si:hover {
+              filter: brightness(0.9);
+            }
+            #modal-reservar-vehiculo #modal-reservar-no:hover {
+              background: var(--color-red-500,#e53935);
+              color: #fff;
+            }
+            `;
+            modal.appendChild(style);
+        } else { modal.style.display = 'flex'; }
+
+        //Cerrar modal
+        function closeModal() { if (modal) modal.remove(); }
+        // Botón No
+        modal.querySelector('#modal-reservar-no').onclick = closeModal;
+        // Botón Sí
+        modal.querySelector('#modal-reservar-si').onclick = async function () {
+            modal.querySelector('#modal-reservar-si').disabled = true;
+            modal.querySelector('#modal-reservar-si').textContent = 'Creando...';
+
+            // Preparar el cuerpo de la solicitud según el formato exacto del endpoint
+            const requestBody = {
+                vehicleId: vehicleId,
+                pickupBranchOfficeId: reservationData.branchInicio,
+                dropOffBranchOfficeId: reservationData.branchDestino,
+                startTime: reservationData.fechaHoraInicio.toISOString(),
+                endTime: reservationData.fechaHoraDevolucion.toISOString()
+            };
+
+            showSpinner();
+
+            const result = await createReservation(requestBody);
+     
+            console.log('Reserva creada exitosamente:', result);
+            loadPage('activity');
+            closeModal();
     }
-
-    // Obtener datos de la reserva desde el estado
-    const reservationData = getReservationData();
-    
-    if (!reservationData || !reservationData.fechaHoraInicio || !reservationData.fechaHoraDevolucion) {
-      alert('Error: No se encontraron datos de la reserva. Por favor, vuelve a realizar la búsqueda.');
-      loadPage('reservation');
-      return;
-    }
-
-    // Preparar el cuerpo de la solicitud según el formato exacto del endpoint
-    const requestBody = {
-      vehicleId: vehicleId,
-      pickupBranchOfficeId: reservationData.branchInicio,
-      dropOffBranchOfficeId: reservationData.branchDestino,
-      startTime: reservationData.fechaHoraInicio.toISOString(),
-      endTime: reservationData.fechaHoraDevolucion.toISOString()
-    };
-
-    // Mostrar spinner mientras se procesa la reserva
-    showSpinner();
-
-    // Llamar a la API para crear la reserva
-    const result = await createReservation(requestBody);
-
-    // Ocultar spinner
-    hideSpinner();
-
-    // Mostrar alerta de éxito
-    alert('Se creó correctamente la reserva');
-
-    console.log('Reserva creada exitosamente:', result);
     
   } catch (error) {
     hideSpinner();
