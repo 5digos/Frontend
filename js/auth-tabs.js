@@ -10,6 +10,7 @@ import {
 import { getAuthenticated } from "./state.js";
 import { loadLoginView, initializeApp } from "./main.js";
 import { showSpinner, hideSpinner } from "./components/spinners.js";
+import { showAlert } from "./components/alerts.js";
 
 let formContainer;
 let loginTab;
@@ -155,11 +156,13 @@ function renderResetPasswordStep1() {
     try {
       showSpinner();
       await requestPasswordReset(email);
+      showAlert("Se envio un código a tu correo electrónico", "success");
       renderResetPasswordStep2(email);
     } catch (error) {
       errorEl.textContent =
         error.message || "Hubo un error al enviar el código";
       errorEl.classList.remove("hidden");
+      showAlert(error.message, "error");
     } finally {
       hideSpinner();
     }
@@ -268,6 +271,7 @@ function renderResetPasswordStep2(email) {
     try {
       showSpinner();
       await confirmPasswordReset(email, code, password);
+      showAlert("Se restablecio la contraseña correctamente", "success");
 
       renderLoginForm();
 
@@ -279,6 +283,7 @@ function renderResetPasswordStep2(email) {
       formContainer.prepend(messageEl);
     } catch (error) {
       codeError.textContent = error.message || "Código incorrecto";
+      showAlert(error.message || "Código incorrecto", "error");
       codeError.classList.remove("hidden");
     } finally {
       hideSpinner();
@@ -299,6 +304,7 @@ function renderResetPasswordStep2(email) {
       try {
         showSpinner();
         await requestPasswordReset(email);
+        showAlert("Se reenvio un código a tu correo electrónico", "success");
         instructionsEl.innerHTML = `
         Se <span class="text-red-500 font-bold">reenvió</span> un código a <strong>${email}</strong>. Ingresalo junto con tu nueva contraseña.
       `;
@@ -308,6 +314,7 @@ function renderResetPasswordStep2(email) {
           error.message || "No se pudo reenviar el código."
         }
       `;
+        showAlert(error.message || "No se pudo reenviar el código.", "error");
       } finally {
         hideSpinner();
       }
@@ -379,11 +386,13 @@ function renderRegisterForm() {
     try {
       showSpinner();
       await register(firstname, lastname, email, dni, password);
+      showAlert("Se envio un código a tu correo electrónico", "success");
       renderVerifyEmailView(email);
     } catch (error) {
       const registerError = document.getElementById("register-error");
       registerError.textContent = error.message || "Error al registrarse";
       registerError.classList.remove("hidden");
+      showAlert(error.message || "Error al registrarse", "error");
     } finally {
       hideSpinner();
     }
@@ -427,6 +436,7 @@ function renderVerifyEmailView(email) {
       await verifyEmail(email, code);
 
       renderLoginForm();
+      showAlert("Registro exitoso.", "success");
 
       const messageEl = document.createElement("p");
       messageEl.textContent = "Registro exitoso. Por favor, inicia sesión.";
@@ -435,6 +445,7 @@ function renderVerifyEmailView(email) {
       formContainer.prepend(messageEl);
     } catch (error) {
       errorEl.textContent = error.message || "Código incorrecto";
+      showAlert(error.message || "Error al registrarse", "error");
       errorEl.classList.remove("hidden");
     } finally {
       hideSpinner();
@@ -450,6 +461,7 @@ function renderVerifyEmailView(email) {
       try {
         showSpinner();
         await resendVerificationEmail(email);
+        showAlert("Se reenvio un código a tu correo electrónico", "success");
         instructionsEl.innerHTML = `
         Se <span class="text-red-500 font-bold">reenvió</span> un código de verificación a <strong>${email}</strong>. Ingresalo para verificar tu cuenta.
       `;
@@ -459,6 +471,7 @@ function renderVerifyEmailView(email) {
           error.message || "No se pudo reenviar el código."
         }
       `;
+        showAlert(error.message || "No se pudo reenviar el código.", "error");
       } finally {
         hideSpinner();
       }

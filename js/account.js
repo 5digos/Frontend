@@ -1,4 +1,5 @@
 import { getUserById, updateUser, changePassword } from "./api/auth.js";
+import { showAlert } from "./components/alerts.js";
 import { loadLoginView } from "./main.js";
 
 let changePasswordSection;
@@ -76,10 +77,10 @@ export async function initializeAccountPage() {
 
     try {
       await updateUser(userId, updatedUser, token);
-      flashSectionSuccess();
+      showAlert("Usuario actualizado exitosamente.", "success");
       exitEditMode();
     } catch (err) {
-      console.error("Error actualizando usuario:", err.message);
+      console.error(err.message || "Error actualizando usuario");
     }
   });
 
@@ -117,11 +118,10 @@ export async function initializeAccountPage() {
 
       try {
         await changePassword(oldPassword, newPassword, token);
-
+        showAlert("Contraseña cambiada exitosamente.", "success");
         exitChangePasswordMode();
         clearPasswordInputs();
         hidePasswordError();
-        flashSectionSuccess();
       } catch (err) {
         console.error("Error cambiando contraseña:", err.message);
         showPasswordError(err.message || "Error cambiando la contraseña.");
@@ -226,15 +226,6 @@ function hidePasswordError() {
 function validatePasswordStrength(password) {
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
   return regex.test(password);
-}
-
-function flashSectionSuccess() {
-  const section = document.getElementById("account-info");
-  section.classList.add("flash-success");
-
-  setTimeout(() => {
-    section.classList.remove("flash-success");
-  }, 500);
 }
 
 function enterEditMode() {

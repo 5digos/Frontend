@@ -42,11 +42,27 @@
   background: var(--color-red-500);
 }
 
-/* transicion al cambiar contraseña */
-#account-info {
-  transition: background-color 1s ease;
+/* alerta */
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-
-#account-info.flash-success {
-  background-color: #02922d;
+@keyframes fadeout {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+.animate-fade-in-out {
+  animation: fadein 0.3s ease, fadeout 0.3s ease 2.7s;
 }
