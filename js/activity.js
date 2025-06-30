@@ -1,0 +1,583 @@
+﻿import { reservaTemplate } from "./components/reservaTemplate.js";
+import { reservaTemplateProxima } from "./components/reservaTemplateProxima.js"; 
+
+import { getUserReservations, returnReservation, pickupReservation, getReservationById, confirmReservation as apiConfirmReservation, cancelReservation as apiCancelReservation  } from './api/reservation.js';
+import { getVehicleById, getBranchOfficeById } from './api/information.js';
+import { hideSpinner, showSpinner } from "./components/spinners.js";
+
+export async function initializeActivityPage() {
+    try {
+        
+        showSpinner();
+        await loadActiveReservation();
+        await loadProximaReserva();
+        await loadReservationHistory();
+        hideSpinner();
+    } catch (error) {
+        console.error("Error inicializando ActivityPage:", error);
+    }
+}
+
+// helpers reutilizados
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString("es-AR");
+}
+function formatTime(dateString) {
+    return new Date(dateString).toLocaleTimeString("es-AR", { hour: '2-digit', minute: '2-digit' });
+}
+export function toggleAccordion(id, prefix = "") {
+    const getId = (name) => prefix ? `${prefix}-${name}` : name;
+
+    const content = document.getElementById(getId(`${id}-content`));
+    const arrow = document.getElementById(getId(`${id}-arrow`));
+
+    if (!content || !arrow) {
+        console.warn(`No se encontraron elementos para toggleAccordion: ${getId(id)}-content o -arrow`);
+        return;
+    }
+
+    content.classList.toggle('active');
+    arrow.classList.toggle('rotated');
+}
+
+
+async function loadActiveReservation() {
+    const containerActive = document.getElementById("active-content");
+    if (!containerActive) {
+        console.error("No se encontró el contenedor active-content");
+        return;
+    }
+    containerActive.classList.add("active");
+    const activeArrow = document.getElementById("active-arrow");
+    if (activeArrow) activeArrow.classList.add("rotated");
+
+    const p = id => `#active-${id}`;
+
+    try {
+        const { items: allReservations } = await getUserReservations();
+
+        if (!allReservations || allReservations.length === 0) {
+            containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas activas.</p>`;
+            return;
+        }
+
+        const statusPriority = { Confirmed: 1, InProgress: 2, Completed: 3 };
+        const sorted = allReservations
+            .filter(r => ["Confirmed", "InProgress", "Completed"].includes(r.status))
+            .sort((a, b) => statusPriority[b.status] - statusPriority[a.status]);
+
+        const active = sorted[0];
+        if (!active || active.status === "Pending") {
+            containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas activas.</p>`;
+            return;
+        }
+
+        containerActive.innerHTML = reservaTemplate("active");
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        
+
+        const [resDetail, vehicleDetail] = await Promise.all([
+            getReservationById(active.reservationId),
+            getVehicleById(active.vehicleId)
+        ]);
+
+        // VEHÍCULO
+        containerActive.querySelector(`${p("vehicle-image")}`).src = vehicleDetail.vehicle.imageUrl;
+        //const vehicleImage = await waitForElementInContainer(containerActive, p("vehicle-image"));
+        //vehicleImage.src = vehicleDetail.vehicle.imageUrl;
+
+        containerActive.querySelector(`${p("vehicle-title")} span`).textContent =
+            `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model} ${vehicleDetail.vehicle.year}`;
+        containerActive.querySelector(p("vehicle-brand-model")).textContent =
+            `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
+        containerActive.querySelector(p("vehicle-year")).textContent = vehicleDetail.vehicle.year;
+        containerActive.querySelector(p("vehicle-plate")).textContent = vehicleDetail.vehicle.licensePlate;
+        containerActive.querySelector(p("vehicle-price")).textContent = `$${vehicleDetail.vehicle.price}`;
+        containerActive.querySelector(p("vehicle-seats")).textContent = vehicleDetail.vehicle.seatingCapacity;
+        containerActive.querySelector(p("vehicle-transmission")).textContent = vehicleDetail.vehicle.transmissionType.name;
+        containerActive.querySelector(p("vehicle-category")).textContent = vehicleDetail.vehicle.category.name;
+
+        // DOCUMENTOS
+        const docsContainer = containerActive.querySelector(p("documents-container"));
+        docsContainer.innerHTML = "";
+        vehicleDetail.documents.forEach(doc => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-2 document-item rounded-lg transition-colors';
+            div.innerHTML = `
+                <span class="text-sm text-gray-200">${doc.docType.toUpperCase()}</span>
+                <button class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </button>`;
+            docsContainer.appendChild(div);
+            const btn = div.querySelector(".download-btn");
+            btn.addEventListener("click", () => downloadDocument(doc.url, doc.docType));
+        });
+
+        // SUCURSALES
+        containerActive.querySelector(p("pickup-office-name")).textContent = resDetail.pickupBranchOfficeName;
+        containerActive.querySelector(p("dropoff-office-name")).textContent = resDetail.dropOffBranchOfficeName;
+
+        const [pickupInfo, dropoffInfo] = await Promise.all([
+            getBranchOfficeById(resDetail.pickupBranchOfficeId),
+            getBranchOfficeById(resDetail.dropOffBranchOfficeId)
+        ]);
+
+        const pickupDetails = containerActive.querySelector(p("pickup-office-details"));
+        pickupDetails.classList.remove("hidden");
+        pickupDetails.querySelector(p("pickup-office-address")).textContent = `${pickupInfo.address}, ${pickupInfo.city}`;
+        pickupDetails.querySelector(p("pickup-office-phone")).textContent = pickupInfo.phone;
+        pickupDetails.querySelector(p("pickup-office-reference")).textContent = pickupInfo.locationReference;
+
+        const dropoffDetails = containerActive.querySelector(p("dropoff-office-details"));
+        dropoffDetails.classList.remove("hidden");
+        dropoffDetails.querySelector(p("dropoff-office-address")).textContent = `${dropoffInfo.address}, ${dropoffInfo.city}`;
+        dropoffDetails.querySelector(p("dropoff-office-phone")).textContent = dropoffInfo.phone;
+        dropoffDetails.querySelector(p("dropoff-office-reference")).textContent = dropoffInfo.locationReference;
+
+        // HORARIOS
+        containerActive.querySelector(p("res-date-start")).textContent = formatDate(resDetail.startTime);
+        containerActive.querySelector(p("res-time-start")).textContent = formatTime(resDetail.startTime);
+        containerActive.querySelector(p("res-date-end")).textContent = formatDate(resDetail.endTime);
+        containerActive.querySelector(p("res-time-end")).textContent = formatTime(resDetail.endTime);
+
+        containerActive.querySelector(p("res-date-real-start")).textContent =
+            resDetail.actualPickupTime ? formatDate(resDetail.actualPickupTime) : "-";
+        containerActive.querySelector(p("res-time-real-start")).textContent =
+            resDetail.actualPickupTime ? formatTime(resDetail.actualPickupTime) : "-";
+        containerActive.querySelector(p("res-date-real-end")).textContent =
+            resDetail.actualReturnTime ? formatDate(resDetail.actualReturnTime) : "-";
+        containerActive.querySelector(p("res-time-real-end")).textContent =
+            resDetail.actualReturnTime ? formatTime(resDetail.actualReturnTime) : "-";
+
+        // BOTÓN ABRIR VEHÍCULO
+        const containerButtons = containerActive.querySelector(p("buttons"));
+        containerButtons.innerHTML = "";
+
+        if (active.status === "Confirmed") {
+
+            handleOpenVehicle(resDetail);
+
+            containerButtons.innerHTML = `
+                <div class="pt-4 space-y-4">
+                   <button id="open-vehicle-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
+                      <span class="material-icons">nfc</span>
+                      Acercar al Vehículo (NFC)
+                   </button>
+                </div>`;
+            const openBtn = containerButtons.querySelector("#open-vehicle-btn");
+            if (openBtn) {
+                openBtn.addEventListener("click", () => {
+                    console.log("Simulando apertura de vehículo vía NFC");
+                    handleOpenVehicle(resDetail, openBtn);
+                });
+            }
+        }
+        if (active.status === "InProgress") {
+
+            addReturnVehicleButton(active);
+
+            containerButtons.innerHTML = `
+                <div class="pt-4 space-y-4">
+                   <button id="open-vehicle-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
+                      <span class="material-icons">nfc</span>
+                      Acercar al Vehículo (NFC)
+                   </button>
+                </div>`;
+            const openBtn = containerButtons.querySelector("#open-vehicle-btn");
+            if (openBtn) {
+                openBtn.addEventListener("click", () => {
+                    console.log("Simulando apertura de vehículo vía NFC");
+                    handleOpenVehicle(resDetail, openBtn);
+                });
+            }
+        }
+
+    } catch (error) {
+        console.error("Error cargando reserva activa:", error);
+    }
+}
+
+
+async function loadProximaReserva() {
+
+    const containerProxima = document.getElementById("proxima-content");
+    if (!containerProxima) {
+        console.error("No se encontró el contenedor proxima-content");
+        return; // evitar errores posteriores
+    }
+    containerProxima.classList.add("active");
+    const arrow = document.getElementById("proxima-arrow");
+    if (arrow) arrow.classList.add("rotated");
+
+    // Espera a que el DOM esté estable antes de buscar elementos
+    await new Promise(resolve => setTimeout(resolve, 100)); // <<== importante
+
+    try {
+        const { items: pendings } = await getUserReservations({ status: "Pending" });
+        if (!pendings || pendings.length === 0) {
+            containerProxima.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay próxima reserva. Cree una.</p>`;
+            return;
+        }
+        const pendingSorted = pendings.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+        const next = pendingSorted[0];
+
+        containerProxima.innerHTML = reservaTemplateProxima("proxima");
+
+        const [resDetail, vehicleDetail] = await Promise.all([
+            getReservationById(next.reservationId),
+            getVehicleById(next.vehicleId)
+        ]);
+
+        const p = id => `proxima-${id}`;
+
+        // Vehículo
+        const imgEl = containerProxima.querySelector(`#${p('vehicle-image')}`);
+        const titleEl = containerProxima.querySelector(`#${p('vehicle-title')} span`);
+        imgEl.src = vehicleDetail.vehicle.imageUrl;
+        imgEl.alt = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
+        titleEl.textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model} ${vehicleDetail.vehicle.year}`;
+
+        containerProxima.querySelector(`#${p('vehicle-brand-model')}`).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
+        containerProxima.querySelector(`#${p('vehicle-year')}`).textContent = vehicleDetail.vehicle.year;
+        containerProxima.querySelector(`#${p('vehicle-plate')}`).textContent = vehicleDetail.vehicle.licensePlate;
+        containerProxima.querySelector(`#${p('vehicle-price')}`).textContent = `$${Number(vehicleDetail.vehicle.price).toLocaleString()}`;
+        containerProxima.querySelector(`#${p('vehicle-seats')}`).textContent = vehicleDetail.vehicle.seatingCapacity;
+        containerProxima.querySelector(`#${p('vehicle-transmission')}`).textContent = vehicleDetail.vehicle.transmissionType.name;
+        containerProxima.querySelector(`#${p('vehicle-category')}`).textContent = vehicleDetail.vehicle.category.name;
+
+        // Documentos
+        const docsContainer = containerProxima.querySelector(`#${p('documents-container')}`);
+        docsContainer.innerHTML = ""; // limpio primero
+        vehicleDetail.documents.forEach(doc => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-2 document-item rounded-lg transition-colors';
+            div.innerHTML = `
+                <span class="text-sm text-gray-200">${doc.docType.toUpperCase()}</span>
+                <button id="download-${doc.docType}" class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </button>`;
+            docsContainer.appendChild(div);
+            document.getElementById(`download-${doc.docType}`).addEventListener('click', () =>
+                downloadDocument(doc.url, doc.docType));
+        });
+
+        // Datos de reserva
+        containerProxima.querySelector(`#${p('pickup-office-name')}`).textContent = resDetail.pickupBranchOfficeName;
+        containerProxima.querySelector(`#${p('dropoff-office-name')}`).textContent = resDetail.dropOffBranchOfficeName;
+
+        const [pickupInfo, dropoffInfo] = await Promise.all([
+            getBranchOfficeById(resDetail.pickupBranchOfficeId),
+            getBranchOfficeById(resDetail.dropOffBranchOfficeId)
+        ]);
+
+        // Detalles sucursal retiro
+        containerProxima.querySelector(`#${p('pickup-office-details')}`).classList.remove('hidden');
+        containerProxima.querySelector(`#${p('pickup-office-address')}`).textContent = `${pickupInfo.address}, ${pickupInfo.city}`;
+        containerProxima.querySelector(`#${p('pickup-office-phone')}`).textContent = pickupInfo.phone;
+        containerProxima.querySelector(`#${p('pickup-office-reference')}`).textContent = pickupInfo.locationReference;
+
+        // Detalles sucursal devolución
+        containerProxima.querySelector(`#${p('dropoff-office-details')}`).classList.remove('hidden');
+        containerProxima.querySelector(`#${p('dropoff-office-address')}`).textContent = `${dropoffInfo.address}, ${dropoffInfo.city}`;
+        containerProxima.querySelector(`#${p('dropoff-office-phone')}`).textContent = dropoffInfo.phone;
+        containerProxima.querySelector(`#${p('dropoff-office-reference')}`).textContent = dropoffInfo.locationReference;
+
+        // Horarios programados
+        containerProxima.querySelector(`#${p('res-date-start')}`).textContent = formatDate(resDetail.startTime);
+        containerProxima.querySelector(`#${p('res-time-start')}`).textContent = formatTime(resDetail.startTime);
+        containerProxima.querySelector(`#${p('res-date-end')}`).textContent = formatDate(resDetail.endTime);
+        containerProxima.querySelector(`#${p('res-time-end')}`).textContent = formatTime(resDetail.endTime);
+
+        // Horarios reales
+        containerProxima.querySelector(`#${p('res-date-real-start')}`).textContent = resDetail.actualPickupTime ? formatDate(resDetail.actualPickupTime) : '-';
+        containerProxima.querySelector(`#${p('res-time-real-start')}`).textContent = resDetail.actualPickupTime ? formatTime(resDetail.actualPickupTime) : '-';
+        containerProxima.querySelector(`#${p('res-date-real-end')}`).textContent = resDetail.actualReturnTime ? formatDate(resDetail.actualReturnTime) : '-';
+        containerProxima.querySelector(`#${p('res-time-real-end')}`).textContent = resDetail.actualReturnTime ? formatTime(resDetail.actualReturnTime) : '-';
+
+        // Botones
+        const containerButtons = containerProxima.querySelector(`#${p('buttons')}`);
+        containerButtons.innerHTML = "";
+
+        if (next.status === "Pending") {
+            containerButtons.innerHTML = `
+            <button id="confirm-btn" class="w-full btn-confirmar text-white font-semibold py-3 rounded-lg">Confirmar Reserva</button>
+            <div class="flex justify-center">
+                <button id="cancel-btn" class="btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg">Cancelar Reserva</button>
+            </div>`;
+        }
+
+        const confirmBtn = containerProxima.querySelector("#confirm-btn");
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', async () => {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Confirmando...';
+
+                try {
+                    const confirmationData = {
+                        reservationId: resDetail.reservationId,
+                        userId: resDetail.userId,
+                        vehicleId: resDetail.vehicleId,
+                        pickupBranchOfficeId: resDetail.pickupBranchOfficeId,
+                        pickupBranchOfficeName: resDetail.pickupBranchOfficeName,
+                        dropOffBranchOfficeId: resDetail.dropOffBranchOfficeId,
+                        dropOffBranchOfficeName: resDetail.dropOffBranchOfficeName,
+                        startTime: resDetail.startTime,
+                        endTime: resDetail.endTime,
+                        actualPickupTime: resDetail.actualPickupTime,
+                        actualReturnTime: resDetail.actualReturnTime,
+                        hourlyRateSnapshot: resDetail.hourlyRateSnapshot,
+                        status: "Confirmed"
+                    };
+
+                    await apiConfirmReservation(resDetail.reservationId, confirmationData);
+                    localStorage.setItem('confirmedReservationId', resDetail.reservationId);
+                    hideButtons();
+                    showConfirmationMessage();
+                    showSpinner();
+                    setTimeout(async () => {
+                        await refreshAccordionsAfterConfirmation();
+                    }, 3000);
+                } catch (error) {
+                    console.error('Error confirming reservation:', error);
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirmar Reserva';
+                }
+            });
+        }
+
+        const cancelBtn = containerProxima.querySelector("#cancel-btn");
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', async () => {
+                if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
+                cancelBtn.disabled = true;
+                cancelBtn.textContent = 'Cancelando...';
+                await apiCancelReservation(resDetail.reservationId);
+                cancelBtn.textContent = 'Cancelada';
+            });
+        }
+
+    } catch (err) {
+        console.error(err);
+        //containerProxima.innerHTML = `<p class="text-red-400 p-4">Error al cargar la reserva: ${err.message}</p>`;
+    }
+}
+
+async function loadReservationHistory() {
+    console.log("Loading reservation history...");
+    //const reservasHistorial = await getUserReservations({ status: "InProgress" });
+
+    //const container = document.getElementById("historial-content");
+    //if (!container) return console.error("No se encontró el contenedor de historial.");
+
+    //container.innerHTML = reservasHistorial.length > 0
+    //    ? reservasHistorial.map(res => reservationTemplate(res)).join("")
+    //    : `<p class="text-gray-400 p-4">No hay historial disponible.</p>`;
+}
+
+window.toggleAccordion = toggleAccordion;
+
+function downloadDocument(url, docType) {
+    const container = document.getElementById('documents-container');
+    const btn = document.getElementById(`download-${docType}`);
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<div class="spinner border-white"></div>`;
+    setTimeout(() => {
+        window.open(url, '_blank');
+        btn.innerHTML = `<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>`;
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+        }, 1000);
+    }, 500);
+}
+
+// Utilidad para esperar elementos que pueden no estar aún en el DOM
+export function waitForElement(id, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const el = document.getElementById(id);
+        if (el) return resolve(el);
+
+        const observer = new MutationObserver(() => {
+            const el = document.getElementById(id);
+            if (el) {
+                observer.disconnect();
+                resolve(el);
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        setTimeout(() => {
+            observer.disconnect();
+            reject(new Error(`Elemento con id "${id}" no apareció en el DOM`));
+        }, timeout);
+    });
+}
+
+// Muestra el mensaje de confirmación en el contenedor correcto dentro de proxima-content
+function showConfirmationMessage() {
+    // Usar el prefijo 'proxima' para el id correcto
+    const container = document.getElementById("proxima-confirmationMessage"); 
+    if (!container) {
+        console.error('No se encontró el contenedor proxima-confirmationMessage');
+        return;
+    }
+    container.innerHTML = `
+        <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center">
+            <span class="material-icons text-green-400 text-3xl mb-2 block">check_circle</span>
+            <h2 class="text-green-400 font-semibold text-lg mb-1">¡Reserva Confirmada!</h2>
+            <p class="text-gray-300 text-sm">Tu reserva ha sido confirmada exitosamente. Ya puedes retirar tu vehículo.</p>
+        </div>`;
+}
+
+function hideButtons() {
+    const confirmBtn = document.getElementById('confirm-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    if (confirmBtn) confirmBtn.classList.add('hidden');
+    if (cancelBtn) cancelBtn.classList.add('hidden');
+}
+
+async function refreshAccordionsAfterConfirmation() {
+    const proximaContent = document.getElementById('proxima-content');
+    const activeContent = document.getElementById('active-content');
+
+    if (!proximaContent || !activeContent) return;
+
+    try {
+        // Volvemos a cargar ambas secciones
+        await loadActiveReservation();
+        await loadProximaReserva();
+
+        // Expandir el acordeón de reserva activa
+        const activeArrow = document.getElementById("active-arrow");
+        activeContent.classList.add('active');
+        if (activeArrow) activeArrow.classList.add('rotated');
+
+    } catch (error) {
+        console.error("Error actualizando acordeones:", error);
+        proximaContent.innerHTML = `<p class="text-red-400 p-4">Error al actualizar.</p>`;
+    } finally {
+        hideSpinner();
+    }
+}
+
+async function handleOpenVehicle(reservation) {
+    const container = document.getElementById("active-buttons");
+    if (!container || document.getElementById("open-vehicle-btn")) return;
+
+    const btn = document.createElement("button");
+    btn.id = "open-vehicle-btn";
+    btn.className = "w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2 mt-4";
+    btn.innerHTML = `<span class="material-icons">keyboard_return</span> Devolver Vehículo`;
+
+    const containerMessage = document.getElementById('active-confirmationMessage');
+    if (containerMessage) containerMessage.innerHTML = `<!-- Mensaje de progreso -->
+      <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center">
+        <span class="material-icons text-blue-400 text-3xl mb-2 block">nfc</span>
+        <h2 class="text-blue-400 font-semibold text-lg mb-1">¡Vehículo Abierto!</h2>
+        <p class="text-gray-300 text-sm">Has retirado el vehículo exitosamente. Disfruta tu viaje.</p>
+      </div>`;
+
+    try {
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner mx-auto w-5 h-5 border-2 border-white border-t-transparent"></div> Abriendo vehículo...`;
+
+        //const now = new Date();
+        //const start = new Date(reservation.startTime);
+        //const oneHourBefore = new Date(start.getTime() - 60 * 60 * 1000);
+        //const oneHourAfter = new Date(start.getTime() + 60 * 60 * 1000);
+
+        //if (now < oneHourBefore || now > oneHourAfter) {
+        //    alert(`No se puede abrir el vehículo fuera de la ventana de retiro.\nPermitido desde: ${oneHourBefore.toLocaleTimeString()}\nHasta: ${oneHourAfter.toLocaleTimeString()}`);
+        //    btn.disabled = false;
+        //    btn.innerHTML = originalContent;
+        //    return;
+        //}
+
+        const updated = await pickupReservation(reservation.reservationId);
+
+        // Podés guardar la reserva actual globalmente si vas a usarla luego
+        window.currentReservation = { ...reservation, ...updated };
+
+        // Actualizá los horarios reales
+        document.getElementById('active-res-date-real-start').textContent = formatDate(updated.actualPickupTime);
+        document.getElementById('active-res-time-real-start').textContent = formatTime(updated.actualPickupTime);
+
+        // Desactivá el botón y cambiá su estado
+        btn.innerHTML = `<span class="material-icons">lock_open</span> Vehículo abierto`;
+        btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        btn.classList.add('bg-gray-600', 'cursor-not-allowed', 'pointer-events-none');
+        //btn.classList.add('hidden');
+
+        // Agregá botón de devolución si querés seguir con el flujo
+        addReturnVehicleButton(updated);
+
+    } catch (error) {
+        console.error('Error al abrir el vehículo:', error);
+        alert('Error al abrir el vehículo: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+    }
+}
+
+function addReturnVehicleButton(reservation) {
+    const container = document.getElementById("active-buttons");
+    if (!container || document.getElementById("return-vehicle-btn")) return;
+
+    const btn = document.createElement("button");
+    btn.id = "return-vehicle-btn";
+    btn.className = "w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2 mt-4";
+    btn.innerHTML = `<span class="material-icons">keyboard_return</span> Devolver Vehículo`;
+
+    btn.addEventListener('click', async () => {
+        try {
+            btn.disabled = true;
+            btn.innerHTML = `<div class="spinner w-5 h-5 border-2 border-white border-t-transparent"></div> Devolviendo...`;
+
+            const updated = await returnReservation(reservation.reservationId);
+            document.getElementById('active--res-date-real-end').textContent = formatDate(updated.actualReturnTime);
+            document.getElementById('active--res-time-real-end').textContent = formatTime(updated.actualReturnTime);
+            btn.style.display = 'none';
+
+            alert("Vehículo devuelto con éxito.");
+        } catch (err) {
+            console.error("Error devolviendo vehículo:", err);
+            alert("Error al devolver el vehículo: " + err.message);
+            btn.disabled = false;
+            btn.innerHTML = `<span class="material-icons">keyboard_return</span> Devolver Vehículo`;
+        }
+    });
+
+    container.appendChild(btn);
+}
+
+function waitForElementInContainer(container, selector, timeout = 3000) {
+    return new Promise((resolve, reject) => {
+        const el = container.querySelector(selector);
+        if (el) return resolve(el);
+
+        const observer = new MutationObserver(() => {
+            const el = container.querySelector(selector);
+            if (el) {
+                observer.disconnect();
+                resolve(el);
+            }
+        });
+
+        observer.observe(container, { childList: true, subtree: true });
+
+        setTimeout(() => {
+            observer.disconnect();
+            reject(new Error(`Elemento "${selector}" no apareció dentro del contenedor`));
+        }, timeout);
+    });
+}

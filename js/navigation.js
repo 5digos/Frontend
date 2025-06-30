@@ -11,6 +11,7 @@ import { populateHourSelects } from "./reservation.js";
 import { getSelectedBranchId } from "./state.js";
 import { initScrollToTop } from "./components/scrollToTop.js";
 import { handleLogout, initializeAccountPage } from "./account.js";
+import { initializeActivityPage } from "./activity.js";
 
 // cargar paginas
 export function loadPage(page) {
@@ -61,9 +62,15 @@ export function loadPage(page) {
         });
       }
       if (page === "activity") {
-        requestAnimationFrame(() => {
-          setupProximaReservaButton();
-        });
+          waitForElement("#activity-section").then(() => {
+              
+              console.log("Se cargó correctamente activity-section.");
+              console.log("active-content:", document.getElementById("active-content"));
+              console.log("proxima-content:", document.getElementById("proxima-content"));
+              console.log("historial-content:", document.getElementById("historial-content"));
+
+              initializeActivityPage();
+          });
       }
       const cancelBtn = document.getElementById("cancel-reservation-btn");
       if (cancelBtn) {
@@ -92,16 +99,27 @@ export function loadPage(page) {
 export function loadSrcPage(pageName) {
   window.location.href = `src/${pageName}.html`;
 }
+export function waitForElement(selector, timeout = 2000) {
+    return new Promise((resolve, reject) => {
+        const interval = 50;
+        const maxTries = timeout / interval;
+        let tries = 0;
 
-// configurar el botón de próxima reserva
-function setupProximaReservaButton() {
-  const proximaReservaBtn = document.getElementById("proxima-reserva-btn");
-  if (proximaReservaBtn) {
-    proximaReservaBtn.addEventListener("click", () => {
-      loadSrcPage("proxima-reserva");
+        const checkExist = () => {
+            const el = document.querySelector(selector);
+            if (el) {
+                resolve(el);
+            } else if (tries++ >= maxTries) {
+                reject(new Error(`Elemento ${selector} no encontrado en el DOM.`));
+            } else {
+                setTimeout(checkExist, interval);
+            }
+        };
+
+        checkExist();
     });
-  }
 }
+
 
 // switchear paginas
 export function setupNavLinks() {
