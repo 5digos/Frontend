@@ -203,7 +203,7 @@ async function loadActiveReservation() {
 
 
 async function loadProximaReserva() {
-
+    
     const containerProxima = document.getElementById("proxima-content");
     if (!containerProxima) {
         console.error("No se encontró el contenedor proxima-content");
@@ -315,58 +315,128 @@ async function loadProximaReserva() {
         const confirmBtn = containerProxima.querySelector("#confirm-btn");
         if (confirmBtn) {
             confirmBtn.addEventListener('click', async () => {
-                confirmBtn.disabled = true;
-                confirmBtn.textContent = 'Confirmando...';
-
-                try {
-                    const confirmationData = {
-                        reservationId: resDetail.reservationId,
-                        userId: resDetail.userId,
-                        vehicleId: resDetail.vehicleId,
-                        pickupBranchOfficeId: resDetail.pickupBranchOfficeId,
-                        pickupBranchOfficeName: resDetail.pickupBranchOfficeName,
-                        dropOffBranchOfficeId: resDetail.dropOffBranchOfficeId,
-                        dropOffBranchOfficeName: resDetail.dropOffBranchOfficeName,
-                        startTime: resDetail.startTime,
-                        endTime: resDetail.endTime,
-                        actualPickupTime: resDetail.actualPickupTime,
-                        actualReturnTime: resDetail.actualReturnTime,
-                        hourlyRateSnapshot: resDetail.hourlyRateSnapshot,
-                        status: "Confirmed"
-                    };
-
-                    await apiConfirmReservation(resDetail.reservationId, confirmationData);
-                    localStorage.setItem('confirmedReservationId', resDetail.reservationId);
-                    hideButtons();
-                    showConfirmationMessage();
-                    showSpinner();
-                    setTimeout(async () => {
-                        await refreshAccordionsAfterConfirmation();
-                    }, 3000);
-                } catch (error) {
-                    console.error('Error confirming reservation:', error);
-                    confirmBtn.disabled = false;
-                    confirmBtn.textContent = 'Confirmar Reserva';
+                // Mostrar modal de confirmación
+                console.log("Mostrando modal de confirmación...");
+                let modal = document.getElementById("modal-confirmar-reserva");
+                if (!modal) {
+                    modal = document.createElement("div");
+                    modal.id = "modal-confirmar-reserva";
+                    modal.innerHTML = `
+                      <div class="modal-overlay" style="position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;">
+                        <div class="modal-content" style="background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);">
+                         <button id="modal-close-x" style="position:absolute;top:0.75rem;right:0.75rem;background:transparent;border:none;font-size:1.2rem;color:#ccc;cursor:pointer;transition:color 0.2s, transform 0.2s;">✕</button>
+                          <h2 style="font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:var(--color-red-500,#e53935);">¿Proceder a confirmar la reserva?</h2>
+                          <div style="display:flex;gap:1rem;justify-content:center;">
+                            <button id="modal-reservar-si" class="btn-confirmar text-white font-semibold px-6 py-2 text-sm rounded-lg">Sí</button>
+                            <button id="modal-reservar-no" class="btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg">No</button>
+                          </div>
+                        </div>
+                      </div>
+                      `;
+                    console.log("añado modal de confirmación");
+                    document.body.appendChild(modal);
+                    
+                } else {
+                    modal.style.display = "flex";
                 }
+                modal.querySelector("#modal-close-x").onclick = closeModal;
+                // Botón No
+                modal.querySelector("#modal-reservar-no").onclick = closeModal;
+                // Botón Sí
+                modal.querySelector("#modal-reservar-si").addEventListener('click', async function () {
+                    modal.querySelector("#modal-reservar-si").disabled = true;
+                    modal.querySelector("#modal-reservar-si").textContent = "Confirmando...";
+                    confirmBtn.disabled = true;
+                    confirmBtn.textContent = 'Confirmando...';
+                    try {
+                        const confirmationData = {
+                            reservationId: resDetail.reservationId,
+                            userId: resDetail.userId,
+                            vehicleId: resDetail.vehicleId,
+                            pickupBranchOfficeId: resDetail.pickupBranchOfficeId,
+                            pickupBranchOfficeName: resDetail.pickupBranchOfficeName,
+                            dropOffBranchOfficeId: resDetail.dropOffBranchOfficeId,
+                            dropOffBranchOfficeName: resDetail.dropOffBranchOfficeName,
+                            startTime: resDetail.startTime,
+                            endTime: resDetail.endTime,
+                            actualPickupTime: resDetail.actualPickupTime,
+                            actualReturnTime: resDetail.actualReturnTime,
+                            hourlyRateSnapshot: resDetail.hourlyRateSnapshot,
+                            status: "Confirmed"
+                        };
+                        await apiConfirmReservation(resDetail.reservationId, confirmationData);
+                        localStorage.setItem('confirmedReservationId', resDetail.reservationId);
+                        hideButtons();
+                        closeModal();
+                        showConfirmationMessage();
+                        showSpinner();
+                        setTimeout(async () => {
+                            await refreshAccordions();
+                        }, 2000);
+                    } catch (error) {
+                        console.error('Error confirming reservation:', error);
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = 'Confirmar Reserva';
+                    }
+                });
             });
         }
-
         const cancelBtn = containerProxima.querySelector("#cancel-btn");
         if (cancelBtn) {
             cancelBtn.addEventListener('click', async () => {
-                if (!confirm('¿Estás seguro de que deseas cancelar esta reserva?')) return;
-                cancelBtn.disabled = true;
-                cancelBtn.textContent = 'Cancelando...';
-                await apiCancelReservation(resDetail.reservationId);
-                cancelBtn.textContent = 'Cancelada';
+                // Mostrar modal de cancelacion
+                let modal = document.getElementById("modal-confirmar-reserva");
+                if (!modal) {
+                    modal = document.createElement("div");
+                    modal.id = "modal-confirmar-reserva";
+                    modal.innerHTML = `
+                    <div class="modal-overlay" style="position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;">
+                    <div class="modal-content" style="background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);">
+                         <button id="modal-close-x" style="position:absolute;top:0.75rem;right:0.75rem;background:transparent;border:none;font-size:1.2rem;color:#ccc;cursor:pointer;transition:color 0.2s, transform 0.2s;">✕</button>
+                         <h2 style="font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:var(--color-red-500,#e53935);">¿Proceder a cancelar la reserva?</h2>
+                         <div style="display:flex;gap:1rem;justify-content:center;">
+                            <button id="modal-reservar-si" class="btn-confirmar text-white font-semibold px-6 py-2 text-sm rounded-lg">Sí</button>
+                            <button id="modal-reservar-no" class="btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg">No</button>
+                       </div>
+                    </div>
+                    </div>
+                    `;
+                    document.body.appendChild(modal);
+                    
+                } else {
+                    modal.style.display = "flex";
+                }
+                modal.querySelector("#modal-close-x").onclick = closeModal;
+                // Botón No
+                modal.querySelector("#modal-reservar-no").onclick = closeModal;
+                // Botón Sí
+                modal.querySelector("#modal-reservar-si").onclick = async function () {
+                    modal.querySelector("#modal-reservar-si").disabled = true;
+                    modal.querySelector("#modal-reservar-si").textContent = "Cancelando...";
+                    cancelBtn.disabled = true;
+                    cancelBtn.textContent = 'Cancelando...';
+                    try {
+                        await apiCancelReservation(resDetail.reservationId);
+                        closeModal();
+                        hideButtons();
+                        showSpinner();
+                        setTimeout(async () => {
+                            await refreshAccordions();
+                        }, 2000);
+                    } catch (error) {
+                        console.error('Error cancelando reserva:', error);
+                        cancelBtn.disabled = false;
+                        cancelBtn.textContent = 'Cancelar Reserva';
+                    }
+                };
             });
         }
-
     } catch (err) {
         console.error(err);
         //containerProxima.innerHTML = `<p class="text-red-400 p-4">Error al cargar la reserva: ${err.message}</p>`;
     }
-}
+} 
+
 
 async function loadReservationHistory() {
     console.log("Loading reservation history...");
@@ -446,7 +516,7 @@ function hideButtons() {
     if (cancelBtn) cancelBtn.classList.add('hidden');
 }
 
-async function refreshAccordionsAfterConfirmation() {
+async function refreshAccordions() {
     const proximaContent = document.getElementById('proxima-content');
     const activeContent = document.getElementById('active-content');
 
@@ -581,3 +651,8 @@ function waitForElementInContainer(container, selector, timeout = 3000) {
         }, timeout);
     });
 }
+
+function closeModal() {
+        let modal = document.getElementById("modal-confirmar-reserva");
+        if (modal) modal.remove();
+    }
