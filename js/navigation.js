@@ -78,8 +78,12 @@ export function loadPage(page) {
             "historial-content:",
             document.getElementById("historial-content")
           );
-
-          initializeActivityPage();
+            initializeActivityPage();
+            initScrollToTop({
+                btnSelector: "#scrollToTopBtn",
+                showAfter: 150,
+                scrollDuration: 600,
+            });
         });
       }
       const cancelBtn = document.getElementById("cancel-reservation-btn");
