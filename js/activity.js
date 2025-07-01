@@ -367,11 +367,11 @@ async function loadProximaReserva() {
                         await apiConfirmReservation(resDetail.reservationId, confirmationData);
                         localStorage.setItem('confirmedReservationId', resDetail.reservationId);
                         hideButtons();
-                        closeModal();
                         showConfirmationMessage();
                         showSpinner();
                         setTimeout(async () => {
                             await refreshAccordions();
+                            closeModal();
                         }, 2000);
                     } catch (error) {
                         console.error('Error confirming reservation:', error);
@@ -417,11 +417,11 @@ async function loadProximaReserva() {
                     cancelBtn.textContent = 'Cancelando...';
                     try {
                         await apiCancelReservation(resDetail.reservationId);
-                        closeModal();
                         hideButtons();
                         showSpinner();
                         setTimeout(async () => {
                             await refreshAccordions();
+                            closeModal();
                         }, 2000);
                     } catch (error) {
                         console.error('Error cancelando reserva:', error);
@@ -519,22 +519,25 @@ function hideButtons() {
 async function refreshAccordions() {
     const proximaContent = document.getElementById('proxima-content');
     const activeContent = document.getElementById('active-content');
-
-    if (!proximaContent || !activeContent) return;
+    const historialContent = document.getElementById('historial-content');
+    console.log('Actualizando acordeones1...');
+    if (!proximaContent || !activeContent || !historialContent) return;
+    console.log('Actualizando acordeones2...');
 
     try {
         // Volvemos a cargar ambas secciones
         await loadActiveReservation();
         await loadProximaReserva();
-
+        await loadReservationHistory();
+        console.log('Actualizando acordeones3...');
         // Expandir el acordeón de reserva activa
         const activeArrow = document.getElementById("active-arrow");
         activeContent.classList.add('active');
         if (activeArrow) activeArrow.classList.add('rotated');
-
+        console.log('Actualizando acordeones4...');
     } catch (error) {
         console.error("Error actualizando acordeones:", error);
-        proximaContent.innerHTML = `<p class="text-red-400 p-4">Error al actualizar.</p>`;
+        //proximaContent.innerHTML = `<p class="text-red-400 p-4">Error al actualizar.</p>`;
     } finally {
         hideSpinner();
     }
@@ -598,7 +601,6 @@ async function handleOpenVehicle(reservation) {
         btn.innerHTML = originalContent;
     }
 }
-
 function addReturnVehicleButton(reservation) {
     const container = document.getElementById("active-buttons");
     if (!container || document.getElementById("return-vehicle-btn")) return;
