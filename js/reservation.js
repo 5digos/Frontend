@@ -432,25 +432,13 @@ export async function reservarVehiculo(vehicleId) {
             <div class="modal-content" style="background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);">
               <h2 style="font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:var(--color-red-500,#e53935);">¿Proceder a crear una nueva reserva?</h2>
               <div style="display:flex;gap:1rem;justify-content:center;">
-                <button id="modal-reservar-si" style="background:var(--color-red-500,#e53935);color:white;padding:0.5rem 1.5rem;border:none;border-radius:0.5rem;font-weight:bold;transition:filter .2s;">Sí</button>
-                <button id="modal-reservar-no" style="background:transparent;color:var(--color-red-500,#e53935);border:1px solid var(--color-red-500,#e53935);padding:0.5rem 1.5rem;border-radius:0.5rem;font-weight:bold;transition:background .2s,color .2s;">No</button>
+                <button id="modal-reservar-si" class="btn-confirmar text-white font-semibold px-6 py-2 text-sm rounded-lg">Sí</button>
+                <button id="modal-reservar-no" class="btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg">No</button>
               </div>
             </div>
           </div>
           `;
       document.body.appendChild(modal);
-      // Hover styles
-      const style = document.createElement("style");
-      style.innerHTML = `
-           #modal-reservar-vehiculo #modal-reservar-si:hover {
-              filter: brightness(0.9);
-            }
-            #modal-reservar-vehiculo #modal-reservar-no:hover {
-              background: var(--color-red-500,#e53935);
-              color: #fff;
-            }
-            `;
-      modal.appendChild(style);
     } else {
       modal.style.display = "flex";
     }
