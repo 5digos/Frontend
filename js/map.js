@@ -1,3 +1,4 @@
+import { getUserById } from "./api/auth.js";
 import { getBranches } from "./api/index.js";
 import { loadPage } from "./navigation.js";
 import { setSelectedBranchId } from "./state.js";
@@ -22,7 +23,7 @@ export async function initializeMap() {
 
   mapElement.style.height = "100%";
 
-  const firstName = getFirstNameFromToken();
+  const firstName = await getFirstNameFromToken();
   if (firstName) {
     const span = document.getElementById("user-first-name");
     if (span) span.textContent = firstName;
@@ -274,13 +275,13 @@ function setupAutocomplete(branches) {
   });
 }
 
-function getFirstNameFromToken() {
+async function getFirstNameFromToken() {
   const token = localStorage.getItem("token");
   if (!token) return null;
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-
-    return payload.firstName || payload.FirstName || null;
+    const user = await getUserById(payload.UserId);
+    return user.firstName;
   } catch (e) {
     console.error("Error al decodificar el token:", e);
     return null;

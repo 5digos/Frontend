@@ -37,7 +37,6 @@ export function showAlert(message, type = "info") {
   container.appendChild(alert);
 
   setTimeout(() => {
-    alert.classList.add("opacity-0");
-    setTimeout(() => alert.remove(), 500);
+    alert.remove();
   }, 3000);
 }
