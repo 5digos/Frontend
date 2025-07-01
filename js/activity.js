@@ -1,6 +1,6 @@
 ﻿import { reservaTemplate } from "./components/reservaTemplate.js";
 import { reservaTemplateProxima } from "./components/reservaTemplateProxima.js"; 
-
+import { reservaTemplateHistorial } from "./components/reservaTemplateHistorial.js";
 import { getUserReservations, returnReservation, pickupReservation, getReservationById, confirmReservation as apiConfirmReservation, cancelReservation as apiCancelReservation  } from './api/reservation.js';
 import { getVehicleById, getBranchOfficeById } from './api/information.js';
 import { hideSpinner, showSpinner } from "./components/spinners.js";
@@ -39,7 +39,6 @@ export function toggleAccordion(id, prefix = "") {
     content.classList.toggle('active');
     arrow.classList.toggle('rotated');
 }
-
 
 async function loadActiveReservation() {
     const containerActive = document.getElementById("active-content");
@@ -200,7 +199,6 @@ async function loadActiveReservation() {
         console.error("Error cargando reserva activa:", error);
     }
 }
-
 
 async function loadProximaReserva() {
     
@@ -437,17 +435,119 @@ async function loadProximaReserva() {
     }
 } 
 
-
 async function loadReservationHistory() {
-    console.log("Loading reservation history...");
-    //const reservasHistorial = await getUserReservations({ status: "InProgress" });
+        console.log("Loading reservation history...");
+        const containerHistorial = document.getElementById("historial-content");
+        if (!containerHistorial) {
+            console.error("No se encontró el contenedor historial-content");
+            return;
+        }
+    containerHistorial.classList.add("active");
+    const arrow = document.getElementById("historial-arrow");
+    if (arrow) arrow.classList.add("rotated");
+    containerHistorial.innerHTML = ""; // Limpio el contenido anterior
+    containerHistorial.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando historial de reservas...</p>`;
 
-    //const container = document.getElementById("historial-content");
-    //if (!container) return console.error("No se encontró el contenedor de historial.");
+    try {
+        const { items: paidReservations } = await getUserReservations({ status: "Pending" }); //voy a setearlo a Pending para probar
 
-    //container.innerHTML = reservasHistorial.length > 0
-    //    ? reservasHistorial.map(res => reservationTemplate(res)).join("")
-    //    : `<p class="text-gray-400 p-4">No hay historial disponible.</p>`;
+        if (!paidReservations || paidReservations.length === 0) {
+            containerHistorial.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas previas pagadas.</p>`;
+            return;
+        }
+        containerHistorial.innerHTML = "";
+        // Filtrar solo las que tienen actualReturnTime definido y ordenar por fecha de devolución real (más reciente primero)
+        //const sorted = paidReservations
+            //.filter(r => r.actualReturnTime)
+            //.sort((a, b) => new Date(b.actualReturnTime) - new Date(a.actualReturnTime));
+
+        for (let i = 0; i < paidReservations.length; i++) {
+
+            const res = paidReservations[i];
+
+            console.log(`Reserva ${i + 1}: ${res}`);
+
+            const [resDetail, vehicleDetail] = await Promise.all([
+                getReservationById(res.reservationId),
+                getVehicleById(res.vehicleId)
+            ]);
+
+            const prefix = `historial-${res.reservationId}`;
+            const wrapper = document.createElement("div");
+            wrapper.classList.add("mb-8", "rounded-lg", "overflow-hidden", "border", "border-gray-700");
+            wrapper.innerHTML = reservaTemplateHistorial(prefix);
+            containerHistorial.appendChild(wrapper);
+
+            const p = id => `${prefix}-${id}`;
+
+            // Datos del vehículo
+            wrapper.querySelector(`#${p('vehicle-image')}`).src = vehicleDetail.vehicle.imageUrl;
+            wrapper.querySelector(`#${p('vehicle-image')}`).alt = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
+            wrapper.querySelector(`#${p('vehicle-title')} span`).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model} ${vehicleDetail.vehicle.year}`;
+            wrapper.querySelector(`#${p('vehicle-brand-model')}`).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
+            wrapper.querySelector(`#${p('vehicle-year')}`).textContent = vehicleDetail.vehicle.year;
+            wrapper.querySelector(`#${p('vehicle-plate')}`).textContent = vehicleDetail.vehicle.licensePlate;
+            wrapper.querySelector(`#${p('vehicle-price')}`).textContent = `$${Number(vehicleDetail.vehicle.price).toLocaleString()}`;
+            wrapper.querySelector(`#${p('vehicle-seats')}`).textContent = vehicleDetail.vehicle.seatingCapacity;
+            wrapper.querySelector(`#${p('vehicle-transmission')}`).textContent = vehicleDetail.vehicle.transmissionType.name;
+            wrapper.querySelector(`#${p('vehicle-category')}`).textContent = vehicleDetail.vehicle.category.name;
+
+            // Documentos
+            const docsContainer = wrapper.querySelector(`#${p('documents-container')}`);
+            docsContainer.innerHTML = "";
+            vehicleDetail.documents.forEach(doc => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2 document-item rounded-lg transition-colors';
+                div.innerHTML = `
+                    <span class="text-sm text-gray-200">${doc.docType.toUpperCase()}</span>
+                    <button id="${p(`download-${doc.docType}`)}" class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </button>`;
+                docsContainer.appendChild(div);
+                document.getElementById(`${p(`download-${doc.docType}`)}`).addEventListener('click', () =>
+                    downloadDocument(doc.url, doc.docType));
+            });
+
+            // Datos de reserva
+            wrapper.querySelector(`#${p('pickup-office-name')}`).textContent = resDetail.pickupBranchOfficeName;
+            wrapper.querySelector(`#${p('dropoff-office-name')}`).textContent = resDetail.dropOffBranchOfficeName;
+
+            const [pickupInfo, dropoffInfo] = await Promise.all([
+                getBranchOfficeById(resDetail.pickupBranchOfficeId),
+                getBranchOfficeById(resDetail.dropOffBranchOfficeId)
+            ]);
+
+            // Pickup
+            wrapper.querySelector(`#${p('pickup-office-details')}`).classList.remove('hidden');
+            wrapper.querySelector(`#${p('pickup-office-address')}`).textContent = `${pickupInfo.address}, ${pickupInfo.city}`;
+            wrapper.querySelector(`#${p('pickup-office-phone')}`).textContent = pickupInfo.phone;
+            wrapper.querySelector(`#${p('pickup-office-reference')}`).textContent = pickupInfo.locationReference;
+
+            // Dropoff
+            wrapper.querySelector(`#${p('dropoff-office-details')}`).classList.remove('hidden');
+            wrapper.querySelector(`#${p('dropoff-office-address')}`).textContent = `${dropoffInfo.address}, ${dropoffInfo.city}`;
+            wrapper.querySelector(`#${p('dropoff-office-phone')}`).textContent = dropoffInfo.phone;
+            wrapper.querySelector(`#${p('dropoff-office-reference')}`).textContent = dropoffInfo.locationReference;
+
+            // Fechas programadas
+            wrapper.querySelector(`#${p('res-date-start')}`).textContent = formatDate(resDetail.startTime);
+            wrapper.querySelector(`#${p('res-time-start')}`).textContent = formatTime(resDetail.startTime);
+            wrapper.querySelector(`#${p('res-date-end')}`).textContent = formatDate(resDetail.endTime);
+            wrapper.querySelector(`#${p('res-time-end')}`).textContent = formatTime(resDetail.endTime);
+
+            // Fechas reales
+            wrapper.querySelector(`#${p('res-date-real-start')}`).textContent = resDetail.actualPickupTime ? formatDate(resDetail.actualPickupTime) : '-';
+            wrapper.querySelector(`#${p('res-time-real-start')}`).textContent = resDetail.actualPickupTime ? formatTime(resDetail.actualPickupTime) : '-';
+            wrapper.querySelector(`#${p('res-date-real-end')}`).textContent = resDetail.actualReturnTime ? formatDate(resDetail.actualReturnTime) : '-';
+            wrapper.querySelector(`#${p('res-time-real-end')}`).textContent = resDetail.actualReturnTime ? formatTime(resDetail.actualReturnTime) : '-';
+        }
+    }
+    catch (error) {        
+            console.error("Error al cargar historial de reservas:", error);
+            containerHistorial.innerHTML = `<p class="p-4 text-red-400 text-sm italic text-center">Hubo un error al cargar el historial.</p>`;
+        }
 }
 
 window.toggleAccordion = toggleAccordion;
