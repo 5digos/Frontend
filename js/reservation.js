@@ -10,10 +10,12 @@ import {
   setReservationData,
   setReservationForm,
   getReservationForm,
-  getReservationData
+  getReservationData,
 } from "./state.js";
 import { loadPage } from "./navigation.js";
 import { hideSpinner, showSpinner } from "./components/spinners.js";
+import { showAlert } from "./components/alerts.js";
+import { openBranchMapModal } from "./components/branchMapModal.js";
 
 // horarios de las reservas
 const hourOptions = Array.from({ length: 24 }, (_, i) => {
@@ -48,7 +50,7 @@ export async function populateBranchSelect(
       branches.forEach((branch) => {
         const option = document.createElement("option");
         option.value = String(branch.branchOfficeId);
-        option.textContent = branch.name;
+        option.textContent = branch.name.replace(/^Sucursal\s*/i, "");
         select.appendChild(option);
       });
 
@@ -166,8 +168,8 @@ export async function renderVehicleCards(
     // Obtener filtros desde estado; si no existen, volver a formulario
     const data = getReservationData();
     if (!data || !data.fechaHoraInicio) {
-      console.warn('Sin datos de filtros, redirigiendo a formulario');
-      loadPage('reservation');
+      console.warn("Sin datos de filtros, redirigiendo a formulario");
+      loadPage("reservation");
       return;
     }
     const form = getReservationForm();
@@ -184,15 +186,15 @@ export async function renderVehicleCards(
       brand: form.brand,
     };
     const vehicles = await getAvailableVehicles(filters);
-    if (!Array.isArray(vehicles)) {   
-         throw new Error('La respuesta del servidor no es válida.');           
+    if (!Array.isArray(vehicles)) {
+      throw new Error("La respuesta del servidor no es válida.");
     }
     if (vehicles.length === 0) {
       if (section) {
         section.innerHTML = `
           <div class="w-full text-center p-6">
-            <h2 class="text-2xl font-bold text-gray-700">No hay vehículos disponibles</h2>
-            <p class="text-gray-500">Intenta ajustar tus filtros o vuelve más tarde.</p>
+            <h2 class="text-2xl font-bold text-stone-300">No hay vehículos disponibles</h2>
+            <p class="text-stone-400">Intenta ajustar tus filtros o vuelve más tarde.</p>
           </div>
         `;
       }
@@ -202,23 +204,36 @@ export async function renderVehicleCards(
 
     vehicles.forEach((vehicle) => {
       const card = document.createElement("div");
-      card.className = "w-full max-w-sm mx-auto overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 card-bg rounded-lg";
+      card.className =
+        "w-full max-w-sm mx-auto overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 card-bg rounded-lg";
 
       // Tarjeta según diseño
       card.innerHTML = `
         <div class="relative">
           <div class="aspect-[4/3] relative overflow-hidden">
-            <img src="${vehicle.imageUrl}" onerror="this.onerror=null; this.src='img/img-not-found.jpg';" alt="${vehicle.brand} ${vehicle.model}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+            <img src="${
+              vehicle.imageUrl
+            }" onerror="this.onerror=null; this.src='img/img-not-found.jpg';" alt="${
+        vehicle.brand
+      } ${
+        vehicle.model
+      }" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
           </div>
           <div class="absolute top-3 right-3">
-            <span class="inline-flex items-center rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">${vehicle.category}</span>
+            <span class="inline-flex items-center rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">${
+              vehicle.category
+            }</span>
           </div>
         </div>
         <div class="p-4 space-y-3">
           <div class="space-y-1">
-            <h3 class="font-bold text-lg text-white leading-tight">${vehicle.brand} ${vehicle.model}</h3>
+            <h3 class="font-bold text-lg text-white leading-tight">${
+              vehicle.brand
+            } ${vehicle.model}</h3>
             <div class="flex items-baseline gap-1">
-              <span class="text-2xl font-bold text-white">$${Number(vehicle.price).toLocaleString()}</span>
+              <span class="text-2xl font-bold text-white">$${Number(
+                vehicle.price
+              ).toLocaleString()}</span>
               <span class="text-sm text-gray-300 font-medium">/hora</span>
             </div>
           </div>
@@ -232,7 +247,9 @@ export async function renderVehicleCards(
               <span>${vehicle.transmissionType}</span>
             </div>
           </div>
-          <button onclick="reservarVehiculo('${vehicle.id}')" class="w-full btn-reservar text-white font-semibold py-2.5 rounded-lg transition-all duration-200">Reservar</button>
+          <button onclick="reservarVehiculo('${
+            vehicle.id
+          }')" class="w-full btn-reservar text-white font-semibold py-2.5 rounded-lg transition-all duration-200">Reservar</button>
         </div>
       `;
       section.appendChild(card);
@@ -272,6 +289,26 @@ export function setupReservationFormHandler() {
     const seatingCapacity = formData.get("seatingCapacity");
     const maxPrice = formData.get("maxPrice");
 
+    if (fechaHoraDevolucion <= fechaHoraInicio) {
+      showAlert(
+        "La fecha/hora de devolución debe ser posterior a la de inicio.",
+        "error"
+      );
+      return;
+
+      if (
+        !branchInicio ||
+        !branchDestino ||
+        !fechaInicio ||
+        !horaInicio ||
+        !fechaDevolucion ||
+        !horaDevolucion
+      ) {
+        showAlert("Por favor completa todos los campos requeridos.", "error");
+        return;
+      }
+    }
+
     setReservationData({
       branchInicio,
       branchDestino,
@@ -307,39 +344,39 @@ export function prefillReservationForm() {
   };
 
   if (!state || Object.keys(state).length === 0) {
-      const now = new Date();
+    const now = new Date();
 
-      const rounded = new Date(now);
-      rounded.setHours(now.getHours() + 1, 0, 0, 0);
+    const rounded = new Date(now);
+    rounded.setHours(now.getHours() + 1, 0, 0, 0);
 
-      const toLocalDateString = (date) => {
-          const yyyy = date.getFullYear();
-          const mm = String(date.getMonth() + 1).padStart(2, "0"); // +1 porque enero es 0
-          const dd = String(date.getDate()).padStart(2, "0");
-          return `${yyyy}-${mm}-${dd}`;
-      };
+    const toLocalDateString = (date) => {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, "0"); // +1 porque enero es 0
+      const dd = String(date.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    };
 
-      const toLocalTimeString = (date) => {
-          const hh = String(date.getHours()).padStart(2, "0");
-          const min = String(date.getMinutes()).padStart(2, "0");
-          return `${hh}:${min}`;
-      };
+    const toLocalTimeString = (date) => {
+      const hh = String(date.getHours()).padStart(2, "0");
+      const min = String(date.getMinutes()).padStart(2, "0");
+      return `${hh}:${min}`;
+    };
 
-      const fechaInicio = toLocalDateString(rounded);
-      
-      const horaInicio = toLocalTimeString(rounded);
-      console.log(fechaInicio);
-      console.log(horaInicio);
+    const fechaInicio = toLocalDateString(rounded);
 
-      const devolucionDate = new Date(rounded);
-      devolucionDate.setDate(devolucionDate.getDate() + 1);
-      const fechaDevolucion = toLocalDateString(devolucionDate);
+    const horaInicio = toLocalTimeString(rounded);
+    console.log(fechaInicio);
+    console.log(horaInicio);
 
-      setValue("fechaInicio", fechaInicio);
-      setValue("horaInicio", horaInicio);
-      setValue("fechaDevolucion", fechaDevolucion);
-      setValue("horaDevolucion", horaInicio);
-      return;
+    const devolucionDate = new Date(rounded);
+    devolucionDate.setDate(devolucionDate.getDate() + 1);
+    const fechaDevolucion = toLocalDateString(devolucionDate);
+
+    setValue("fechaInicio", fechaInicio);
+    setValue("horaInicio", horaInicio);
+    setValue("fechaDevolucion", fechaDevolucion);
+    setValue("horaDevolucion", horaInicio);
+    return;
   }
 
   setValue("branchInicio", state.branchInicio);
@@ -361,30 +398,36 @@ function combineDateTime(date, hour) {
 
 // función global para reservar
 export async function reservarVehiculo(vehicleId) {
-    try {
-        // Verificar autenticación
-        const token = localStorage.getItem('token');
-        if (!token) {
-            alert('Debes iniciar sesión para realizar una reserva.');
-            loadPage('login');
-            return;
-        }
+  try {
+    // Verificar autenticación
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Debes iniciar sesión para realizar una reserva.");
+      loadPage("login");
+      return;
+    }
 
-        // Obtener datos de la reserva desde el estado
-        const reservationData = getReservationData();
+    // Obtener datos de la reserva desde el estado
+    const reservationData = getReservationData();
 
-        if (!reservationData || !reservationData.fechaHoraInicio || !reservationData.fechaHoraDevolucion) {
-            alert('Error: No se encontraron datos de la reserva. Por favor, vuelve a realizar la búsqueda.');
-            loadPage('reservation');
-            return;
-        }
+    if (
+      !reservationData ||
+      !reservationData.fechaHoraInicio ||
+      !reservationData.fechaHoraDevolucion
+    ) {
+      alert(
+        "Error: No se encontraron datos de la reserva. Por favor, vuelve a realizar la búsqueda."
+      );
+      loadPage("reservation");
+      return;
+    }
 
-        // Mostrar modal de confirmación
-        let modal = document.getElementById('modal-reservar-vehiculo');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'modal-reservar-vehiculo';
-            modal.innerHTML = `
+    // Mostrar modal de confirmación
+    let modal = document.getElementById("modal-reservar-vehiculo");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "modal-reservar-vehiculo";
+      modal.innerHTML = `
           <div class="modal-overlay" style="position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;">
             <div class="modal-content" style="background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);">
               <h2 style="font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:var(--color-red-500,#e53935);">¿Proceder a crear una nueva reserva?</h2>
@@ -395,10 +438,10 @@ export async function reservarVehiculo(vehicleId) {
             </div>
           </div>
           `;
-            document.body.appendChild(modal);
-            // Hover styles
-            const style = document.createElement('style');
-            style.innerHTML = `
+      document.body.appendChild(modal);
+      // Hover styles
+      const style = document.createElement("style");
+      style.innerHTML = `
            #modal-reservar-vehiculo #modal-reservar-si:hover {
               filter: brightness(0.9);
             }
@@ -407,51 +450,74 @@ export async function reservarVehiculo(vehicleId) {
               color: #fff;
             }
             `;
-            modal.appendChild(style);
-        } else { modal.style.display = 'flex'; }
-
-        //Cerrar modal
-        function closeModal() { if (modal) modal.remove(); }
-        // Botón No
-        modal.querySelector('#modal-reservar-no').onclick = closeModal;
-        // Botón Sí
-        modal.querySelector('#modal-reservar-si').onclick = async function () {
-            modal.querySelector('#modal-reservar-si').disabled = true;
-            modal.querySelector('#modal-reservar-si').textContent = 'Creando...';
-
-            // Preparar el cuerpo de la solicitud según el formato exacto del endpoint
-            const requestBody = {
-                vehicleId: vehicleId,
-                pickupBranchOfficeId: reservationData.branchInicio,
-                dropOffBranchOfficeId: reservationData.branchDestino,
-                startTime: reservationData.fechaHoraInicio.toISOString(),
-                endTime: reservationData.fechaHoraDevolucion.toISOString()
-            };
-
-            showSpinner();
-
-            const result = await createReservation(requestBody);
-     
-            console.log('Reserva creada exitosamente:', result);
-            loadPage('activity');
-            closeModal();
+      modal.appendChild(style);
+    } else {
+      modal.style.display = "flex";
     }
-    
+
+    //Cerrar modal
+    function closeModal() {
+      if (modal) modal.remove();
+    }
+    // Botón No
+    modal.querySelector("#modal-reservar-no").onclick = closeModal;
+    // Botón Sí
+    modal.querySelector("#modal-reservar-si").onclick = async function () {
+      modal.querySelector("#modal-reservar-si").disabled = true;
+      modal.querySelector("#modal-reservar-si").textContent = "Creando...";
+
+      // Preparar el cuerpo de la solicitud según el formato exacto del endpoint
+      const requestBody = {
+        vehicleId: vehicleId,
+        pickupBranchOfficeId: reservationData.branchInicio,
+        dropOffBranchOfficeId: reservationData.branchDestino,
+        startTime: reservationData.fechaHoraInicio.toISOString(),
+        endTime: reservationData.fechaHoraDevolucion.toISOString(),
+      };
+
+      showSpinner();
+
+      const result = await createReservation(requestBody);
+
+      console.log("Reserva creada exitosamente:", result);
+      loadPage("activity");
+      closeModal();
+    };
   } catch (error) {
     hideSpinner();
-    console.error('Error al crear la reserva:', error);
-    
+    console.error("Error al crear la reserva:", error);
+
     // Manejar errores específicos de autenticación
-    if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-      alert('Error de autenticación. Por favor, inicia sesión nuevamente.');
-      loadPage('login');
+    if (
+      error.message.includes("401") ||
+      error.message.includes("Unauthorized")
+    ) {
+      alert("Error de autenticación. Por favor, inicia sesión nuevamente.");
+      loadPage("login");
       return;
     }
-    
+
     // Mostrar mensaje de error específico
-    const errorMessage = error.message || 'Ocurrió un error inesperado al crear la reserva.';
+    const errorMessage =
+      error.message || "Ocurrió un error inesperado al crear la reserva.";
     alert(`Error al crear la reserva: ${errorMessage}`);
   }
 }
 // Exponer en window para onclick inline
 window.reservarVehiculo = reservarVehiculo;
+
+export function setupMapIcons() {
+  document.querySelectorAll("i[data-target-select]").forEach((icon) => {
+    icon.addEventListener("click", async () => {
+      const selectId = icon.getAttribute("data-target-select");
+      const select = document.getElementById(selectId);
+      const currentBranchId = Number(select?.value) || null;
+
+      openBranchMapModal(currentBranchId, (selectedBranch) => {
+        if (selectedBranch) {
+          select.value = String(selectedBranch.branchOfficeId);
+        }
+      });
+    });
+  });
+}

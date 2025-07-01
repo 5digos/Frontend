@@ -6,6 +6,7 @@ import {
   renderVehicleCards,
   setupReservationFormHandler,
   prefillReservationForm,
+  setupMapIcons,
 } from "./reservation.js";
 import { populateHourSelects } from "./reservation.js";
 import { getSelectedBranchId } from "./state.js";
@@ -49,6 +50,7 @@ export function loadPage(page) {
           populateTransmissionTypeSelect();
           setupReservationFormHandler();
           prefillReservationForm();
+          setupMapIcons();
         });
       }
       if (page === "filtered-vehicles") {
@@ -62,15 +64,23 @@ export function loadPage(page) {
         });
       }
       if (page === "activity") {
-          waitForElement("#activity-section").then(() => {
-              
-              console.log("Se cargó correctamente activity-section.");
-              console.log("active-content:", document.getElementById("active-content"));
-              console.log("proxima-content:", document.getElementById("proxima-content"));
-              console.log("historial-content:", document.getElementById("historial-content"));
+        waitForElement("#activity-section").then(() => {
+          console.log("Se cargó correctamente activity-section.");
+          console.log(
+            "active-content:",
+            document.getElementById("active-content")
+          );
+          console.log(
+            "proxima-content:",
+            document.getElementById("proxima-content")
+          );
+          console.log(
+            "historial-content:",
+            document.getElementById("historial-content")
+          );
 
-              initializeActivityPage();
-          });
+          initializeActivityPage();
+        });
       }
       const cancelBtn = document.getElementById("cancel-reservation-btn");
       if (cancelBtn) {
@@ -100,26 +110,25 @@ export function loadSrcPage(pageName) {
   window.location.href = `src/${pageName}.html`;
 }
 export function waitForElement(selector, timeout = 2000) {
-    return new Promise((resolve, reject) => {
-        const interval = 50;
-        const maxTries = timeout / interval;
-        let tries = 0;
+  return new Promise((resolve, reject) => {
+    const interval = 50;
+    const maxTries = timeout / interval;
+    let tries = 0;
 
-        const checkExist = () => {
-            const el = document.querySelector(selector);
-            if (el) {
-                resolve(el);
-            } else if (tries++ >= maxTries) {
-                reject(new Error(`Elemento ${selector} no encontrado en el DOM.`));
-            } else {
-                setTimeout(checkExist, interval);
-            }
-        };
+    const checkExist = () => {
+      const el = document.querySelector(selector);
+      if (el) {
+        resolve(el);
+      } else if (tries++ >= maxTries) {
+        reject(new Error(`Elemento ${selector} no encontrado en el DOM.`));
+      } else {
+        setTimeout(checkExist, interval);
+      }
+    };
 
-        checkExist();
-    });
+    checkExist();
+  });
 }
-
 
 // switchear paginas
 export function setupNavLinks() {

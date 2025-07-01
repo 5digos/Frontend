@@ -17,12 +17,18 @@
       <h1 class="text-xl text-stone-700 dark:text-neutral-400">Retiro</h1>
 
       <label for="branchInicio" class="block text-xl">Sucursal Inicio</label>
-      <select
-        id="branchInicio"
-        name="branchInicio"
-        required
-        class="text-lg border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
-      ></select>
+      <div class="flex items-center gap-2">
+        <select
+          id="branchInicio"
+          name="branchInicio"
+          required
+          class="flex-grow text-lg border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
+        ></select>
+        <i
+          data-target-select="branchInicio"
+          class="fa-solid fa-map-location-dot text-3xl mx-1 text-stone-400 hover:text-white cursor-pointer flex-shrink-0"
+        ></i>
+      </div>
 
       <label for="fechaInicio" class="text-xl">Fecha Inicio</label>
       <div class="flex gap-2 mb-1">
@@ -50,12 +56,18 @@
       <h1 class="text-xl text-stone-700 dark:text-neutral-400">Devolucion</h1>
 
       <label for="branchDestino" class="block text-xl">Sucursal Destino</label>
-      <select
-        id="branchDestino"
-        name="branchDestino"
-        required
-        class="text-lg border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
-      ></select>
+      <div class="flex items-center gap-2">
+        <select
+          id="branchDestino"
+          name="branchDestino"
+          required
+          class="flex-grow text-lg border border-neutral-300 rounded-md px-3 py-2 transition duration-300 bg-neutral-200 dark:bg-stone-800 focus:outline-none focus:border-red-400 hover:border-neutral-300 appearance-none cursor-pointer"
+        ></select>
+        <i
+          data-target-select="branchDestino"
+          class="fa-solid fa-map-location-dot text-3xl mx-1 text-stone-400 hover:text-white cursor-pointer flex-shrink-0"
+        ></i>
+      </div>
 
       <label for="fechaDevolucion" class="text-xl">Fecha de Devolución</label>
       <div class="flex gap-2">
@@ -155,3 +167,47 @@
     </button>
   </form>
 </section>
+
+<!-- modal de elegir sucursal -->
+<div
+  id="map-modal"
+  class="fixed inset-0 z-50 hidden bg-black/70 flex items-center justify-center"
+>
+  <div
+    class="bg-white dark:bg-stone-900 rounded-2xl shadow-xl max-w-[340px] md:max-w-lg lg:max-w-xl w-full overflow-hidden relative flex flex-col"
+  >
+    <!-- header -->
+    <div
+      class="flex justify-between items-center px-6 py-4 border-b border-stone-300 dark:border-stone-700"
+    >
+      <h2 class="text-xl">Seleccionar sucursal</h2>
+      <button
+        id="map-modal-close"
+        class="text-2xl text-stone-400 hover:text-white cursor-pointer"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- mapa -->
+    <div id="map-modal-map" class="h-[300px] w-full"></div>
+
+    <!-- footer -->
+    <div
+      class="p-4 flex justify-end border-t border-stone-300 dark:border-stone-700 gap-3"
+    >
+      <select
+        id="branch-selected"
+        name="branch-selected"
+        type="text"
+        class="w-full text-lg border rounded-lg px-3 py-2 transition duration-300 bg-stone-800 placeholder:text-stone-300 hover:border-red-400 focus:border-red-500 focus:outline-none appearance-none cursor-pointer"
+      ></select>
+      <button
+        id="map-modal-select"
+        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold cursor-pointer"
+      >
+        Seleccionar
+      </button>
+    </div>
+  </div>
+</div>
