@@ -161,7 +161,7 @@ export function reservaTemplate(prefix = "") {
 
       <!-- Botones -->
       <div class="space-y-4">
-        <div id="${p('buttons')}" class="pt-4 space-y-4"></div>
+        <div id="${p('buttons')}" class="space-y-4"></div>
       </div>
     </div>
   `;

@@ -54,6 +54,7 @@ export function toggleAccordion(id, prefix = "") {
 }
 
 async function loadActiveReservation() {
+    
   const containerActive = document.getElementById("active-content");
   if (!containerActive) {
     console.error("No se encontró el contenedor active-content");
@@ -65,183 +66,217 @@ async function loadActiveReservation() {
 
   const p = (id) => `#active-${id}`;
 
-  try {
-    const { items: allReservations } = await getUserReservations();
+    try {
 
-    if (!allReservations || allReservations.length === 0) {
-      containerActive.innerHTML = `<p class="p-4 text-stone-300 text-sm italic text-center">No hay reservas activas.</p>`;
-      return;
-    }
+       
 
-    const statusPriority = { Confirmed: 1, InProgress: 2, Completed: 3 };
-    const sorted = allReservations
-      .filter((r) =>
-        ["Confirmed", "InProgress", "Completed"].includes(r.status)
-      )
-      .sort((a, b) => statusPriority[b.status] - statusPriority[a.status]);
+        const { items: allReservations } = await getUserReservations();
 
-    const active = sorted[0];
-    if (!active || active.status === "Pending") {
-      containerActive.innerHTML = `<p class="p-4 text-stone-300 text-sm italic text-center">No hay reservas activas.</p>`;
-      return;
-    }
+        if (!allReservations || allReservations.length === 0) {
+            containerActive.innerHTML = `<p class="p-4 text-stone-300 text-sm italic text-center">No hay reservas activas.</p>`;
+            return;
+        }
 
-    containerActive.innerHTML = reservaTemplate("active");
+        const statusPriority = { Confirmed: 1, InProgress: 2, Completed: 3 };
+        const sorted = allReservations
+            .filter((r) =>
+                ["Confirmed", "InProgress", "Completed"].includes(r.status)
+            )
+            .sort((a, b) => statusPriority[b.status] - statusPriority[a.status]);
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
+        const active = sorted[0];
+        if (!active || active.status === "Pending") {
+            containerActive.innerHTML = `<p class="p-4 text-stone-300 text-sm italic text-center">No hay reservas activas.</p>`;
+            return;
+        }
+       
+        containerActive.innerHTML = reservaTemplate("active");
 
-    const [resDetail, vehicleDetail] = await Promise.all([
-      getReservationById(active.reservationId),
-      getVehicleById(active.vehicleId),
-    ]);
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // VEHÍCULO
-    containerActive.querySelector(`${p("vehicle-image")}`).src =
-      vehicleDetail.vehicle.imageUrl;
-    //const vehicleImage = await waitForElementInContainer(containerActive, p("vehicle-image"));
-    //vehicleImage.src = vehicleDetail.vehicle.imageUrl;
+        const [resDetail, vehicleDetail] = await Promise.all([
+            getReservationById(active.reservationId),
+            getVehicleById(active.vehicleId),
+        ]);
 
-    containerActive.querySelector(
-      `${p("vehicle-title")} span`
-    ).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model} ${vehicleDetail.vehicle.year}`;
-    containerActive.querySelector(
-      p("vehicle-brand-model")
-    ).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
-    containerActive.querySelector(p("vehicle-year")).textContent =
-      vehicleDetail.vehicle.year;
-    containerActive.querySelector(p("vehicle-plate")).textContent =
-      vehicleDetail.vehicle.licensePlate;
-    containerActive.querySelector(
-      p("vehicle-price")
-    ).textContent = `$${vehicleDetail.vehicle.price}`;
-    containerActive.querySelector(p("vehicle-seats")).textContent =
-      vehicleDetail.vehicle.seatingCapacity;
-    containerActive.querySelector(p("vehicle-transmission")).textContent =
-      vehicleDetail.vehicle.transmissionType.name;
-    containerActive.querySelector(p("vehicle-category")).textContent =
-      vehicleDetail.vehicle.category.name;
+        // VEHÍCULO
+        containerActive.querySelector(`${p("vehicle-image")}`).src =
+            vehicleDetail.vehicle.imageUrl;
+        //const vehicleImage = await waitForElementInContainer(containerActive, p("vehicle-image"));
+        //vehicleImage.src = vehicleDetail.vehicle.imageUrl;
 
-    // DOCUMENTOS
-    const docsContainer = containerActive.querySelector(
-      p("documents-container")
-    );
-    docsContainer.innerHTML = "";
-    vehicleDetail.documents.forEach((doc) => {
-      const div = document.createElement("div");
-      div.className =
-        "flex items-center justify-between p-2 document-item rounded-lg transition-colors";
-      div.innerHTML = `
+        containerActive.querySelector(`${p("vehicle-title")} span`).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model} ${vehicleDetail.vehicle.year}`;
+        containerActive.querySelector(p("vehicle-brand-model")).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
+        containerActive.querySelector(p("vehicle-year")).textContent =vehicleDetail.vehicle.year;
+        containerActive.querySelector(p("vehicle-plate")).textContent =vehicleDetail.vehicle.licensePlate;
+        containerActive.querySelector(p("vehicle-price")).textContent = `$${vehicleDetail.vehicle.price}`;
+        containerActive.querySelector(p("vehicle-seats")).textContent =vehicleDetail.vehicle.seatingCapacity;
+        containerActive.querySelector(p("vehicle-transmission")).textContent =vehicleDetail.vehicle.transmissionType.name;
+        containerActive.querySelector(p("vehicle-category")).textContent =vehicleDetail.vehicle.category.name;
+
+        // DOCUMENTOS
+        const docsContainer = containerActive.querySelector(p("documents-container"));
+        docsContainer.innerHTML = "";
+        vehicleDetail.documents.forEach((doc) => {
+            const div = document.createElement("div");
+            div.className =
+                "flex items-center justify-between p-2 document-item rounded-lg transition-colors";
+            div.innerHTML = `
                 <span class="text-sm text-gray-200">${doc.docType.toUpperCase()}</span>
                 <button class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                 </button>`;
-      docsContainer.appendChild(div);
-      const btn = div.querySelector(".download-btn");
-      btn.addEventListener("click", () =>
-        downloadDocument(doc.url, doc.docType)
-      );
-    });
+            docsContainer.appendChild(div);
+            const btn = div.querySelector(".download-btn");
+            btn.addEventListener("click", () =>
+                downloadDocument(doc.url, doc.docType)
+            );
+        });
 
-    // SUCURSALES
-    containerActive.querySelector(p("pickup-office-name")).textContent =
-      resDetail.pickupBranchOfficeName;
-    containerActive.querySelector(p("dropoff-office-name")).textContent =
-      resDetail.dropOffBranchOfficeName;
+        // SUCURSALES
+        containerActive.querySelector(p("pickup-office-name")).textContent = resDetail.pickupBranchOfficeName;
+        containerActive.querySelector(p("dropoff-office-name")).textContent = resDetail.dropOffBranchOfficeName;
 
-    const [pickupInfo, dropoffInfo] = await Promise.all([
-      getBranchOfficeById(resDetail.pickupBranchOfficeId),
-      getBranchOfficeById(resDetail.dropOffBranchOfficeId),
-    ]);
+        const [pickupInfo, dropoffInfo] = await Promise.all([
+            getBranchOfficeById(resDetail.pickupBranchOfficeId),
+            getBranchOfficeById(resDetail.dropOffBranchOfficeId),
+        ]);
 
-    const pickupDetails = containerActive.querySelector(
-      p("pickup-office-details")
-    );
-    pickupDetails.classList.remove("hidden");
-    pickupDetails.querySelector(
-      p("pickup-office-address")
-    ).textContent = `${pickupInfo.address}, ${pickupInfo.city}`;
-    pickupDetails.querySelector(p("pickup-office-phone")).textContent =
-      pickupInfo.phone;
-    pickupDetails.querySelector(p("pickup-office-reference")).textContent =
-      pickupInfo.locationReference;
+        const pickupDetails = containerActive.querySelector(p("pickup-office-details"));
+        pickupDetails.classList.remove("hidden");
+        pickupDetails.querySelector(p("pickup-office-address")).textContent = `${pickupInfo.address}, ${pickupInfo.city}`;
+        pickupDetails.querySelector(p("pickup-office-phone")).textContent = pickupInfo.phone;
+        pickupDetails.querySelector(p("pickup-office-reference")).textContent = pickupInfo.locationReference;
 
-    const dropoffDetails = containerActive.querySelector(
-      p("dropoff-office-details")
-    );
-    dropoffDetails.classList.remove("hidden");
-    dropoffDetails.querySelector(
-      p("dropoff-office-address")
-    ).textContent = `${dropoffInfo.address}, ${dropoffInfo.city}`;
-    dropoffDetails.querySelector(p("dropoff-office-phone")).textContent =
-      dropoffInfo.phone;
-    dropoffDetails.querySelector(p("dropoff-office-reference")).textContent =
-      dropoffInfo.locationReference;
+        const dropoffDetails = containerActive.querySelector(p("dropoff-office-details"));
+        dropoffDetails.classList.remove("hidden");
+        dropoffDetails.querySelector(p("dropoff-office-address")).textContent = `${dropoffInfo.address}, ${dropoffInfo.city}`;
+        dropoffDetails.querySelector(p("dropoff-office-phone")).textContent = dropoffInfo.phone;
+        dropoffDetails.querySelector(p("dropoff-office-reference")).textContent = dropoffInfo.locationReference;
 
-    // HORARIOS
-    containerActive.querySelector(p("res-date-start")).textContent = formatDate(
-      resDetail.startTime
-    );
-    containerActive.querySelector(p("res-time-start")).textContent = formatTime(
-      resDetail.startTime
-    );
-    containerActive.querySelector(p("res-date-end")).textContent = formatDate(
-      resDetail.endTime
-    );
-    containerActive.querySelector(p("res-time-end")).textContent = formatTime(
-      resDetail.endTime
-    );
+        // HORARIOS
+        containerActive.querySelector(p("res-date-start")).textContent = formatDate(resDetail.startTime);
+        containerActive.querySelector(p("res-time-start")).textContent = formatTime(resDetail.startTime);
+        containerActive.querySelector(p("res-date-end")).textContent = formatDate(resDetail.endTime);
+        containerActive.querySelector(p("res-time-end")).textContent = formatTime(resDetail.endTime);
 
-    containerActive.querySelector(p("res-date-real-start")).textContent =
-      resDetail.actualPickupTime ? formatDate(resDetail.actualPickupTime) : "-";
-    containerActive.querySelector(p("res-time-real-start")).textContent =
-      resDetail.actualPickupTime ? formatTime(resDetail.actualPickupTime) : "-";
-    containerActive.querySelector(p("res-date-real-end")).textContent =
-      resDetail.actualReturnTime ? formatDate(resDetail.actualReturnTime) : "-";
-    containerActive.querySelector(p("res-time-real-end")).textContent =
-      resDetail.actualReturnTime ? formatTime(resDetail.actualReturnTime) : "-";
-
-    // BOTÓN ABRIR VEHÍCULO
+        containerActive.querySelector(p("res-date-real-start")).textContent =resDetail.actualPickupTime ? formatDate(resDetail.actualPickupTime) : "-";
+        containerActive.querySelector(p("res-time-real-start")).textContent =resDetail.actualPickupTime ? formatTime(resDetail.actualPickupTime) : "-";
+        containerActive.querySelector(p("res-date-real-end")).textContent =resDetail.actualReturnTime ? formatDate(resDetail.actualReturnTime) : "-";
+        containerActive.querySelector(p("res-time-real-end")).textContent =resDetail.actualReturnTime ? formatTime(resDetail.actualReturnTime) : "-";
+       
+    // Container Botones
     const containerButtons = containerActive.querySelector(p("buttons"));
     containerButtons.innerHTML = "";
 
     if (active.status === "Confirmed") {
-      handleOpenVehicle(resDetail);
+      //handleOpenVehicle(resDetail);
 
       containerButtons.innerHTML = `
-                <div class="pt-4 space-y-4">
+                <div class=" space-y-4">
                    <button id="open-vehicle-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
                       <span class="material-icons">nfc</span>
-                      Acercar al Vehículo (NFC)
+                      Abrir Vehículo (NFC)
                    </button>
                 </div>`;
       const openBtn = containerButtons.querySelector("#open-vehicle-btn");
       if (openBtn) {
-        openBtn.addEventListener("click", () => {
-          console.log("Simulando apertura de vehículo vía NFC");
-          handleOpenVehicle(resDetail, openBtn);
+          openBtn.addEventListener("click", async () => {
+              try {
+                  openBtn.disabled = true;
+                  openBtn.innerHTML = `<div class="spinner w-5 h-5 border-2 border-white border-t-transparent"></div> Retirando...`;
+
+                  const updated = await pickupReservation(resDetail.reservationId);
+
+                  console.log("Simulando apertura de vehículo vía NFC");
+                  // Actualizá los horarios reales
+                  containerActive.querySelector(p("res-date-real-start")).textContent = formatDate(updated.actualPickupTime);
+                  containerActive.querySelector(p("res-time-real-start")).textContent = formatTime(updated.actualPickupTime);
+
+                  // Desactivá el botón y cambiá su estado
+                  openBtn.innerHTML = `<span class="material-icons">lock_open</span> Vehículo retirado`;
+                  openBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+                  openBtn.classList.add("bg-gray-600", "cursor-not-allowed", "pointer-events-none");
+
+                  setTimeout(() => {
+                      refreshReservaActiva();
+                  }, 5000);
+              } catch (error) {
+                  console.error("Error retirando vehículo:", err);
+                  alert("Error al retirar el vehículo: " + err.message);
+                  openBtn.disabled = false;
+                  openBtn.innerHTML = `<span class="material-icons">nfc</span> Abrir Vehículo (NFC)`;
+
+              }
+
         });
       }
     }
     if (active.status === "InProgress") {
-      addReturnVehicleButton(active);
-
+      
       containerButtons.innerHTML = `
-                <div class="pt-4 space-y-4">
-                   <button id="open-vehicle-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
-                      <span class="material-icons">nfc</span>
-                      Acercar al Vehículo (NFC)
+                <div class=" space-y-4">
+                   <button id="return-vehicle-btn" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2 mt-4">
+                      <span class="material-icons">keyboard_return</span>
+                      Devolver vehículo
                    </button>
                 </div>`;
-      const openBtn = containerButtons.querySelector("#open-vehicle-btn");
-      if (openBtn) {
-        openBtn.addEventListener("click", () => {
-          console.log("Simulando apertura de vehículo vía NFC");
-          handleOpenVehicle(resDetail, openBtn);
+      const returnBtn = containerButtons.querySelector("#return-vehicle-btn");
+      if (returnBtn) {
+          returnBtn.addEventListener("click", async () => {
+                console.log("Simulando retorno de vehículo..");
+                try {
+                    returnBtn.disabled = true;
+                    returnBtn.innerHTML = `<div class="spinner w-5 h-5 border-2 border-white border-t-transparent"></div> Devolviendo...`;
+
+                    //actualizar horarios reales del retorno del auto
+                    const updated = await returnReservation(resDetail.reservationId);
+                    containerActive.querySelector(p("res-date-real-end")).textContent = formatDate(updated.actualReturnTime);
+                    containerActive.querySelector(p("res-time-real-end")).textContent = formatTime(updated.actualReturnTime);
+                    // Desactivá el botón y cambiá su estado
+                    returnBtn.innerHTML = `<span class="material-icons">lock_open</span> Vehículo devuelto`;
+                    returnBtn.classList.remove("bg-orange-600", "hover:bg-orange-700");
+                    returnBtn.classList.add("bg-gray-600", "cursor-not-allowed", "pointer-events-none");
+
+                    setTimeout(() => {
+                        refreshReservaActiva();
+                    }, 5000);
+
+                } catch (err) {
+
+                    console.error("Error devolviendo vehículo:", err);
+                    alert("Error al devolver el vehículo: " + err.message);
+                    returnBtn.disabled = false;
+                    returnBtn.innerHTML = `<span class="material-icons">keyboard_return</span> Devolver Vehículo`;
+                }
+                //handleOpenVehicle(resDetail, openBtn);
         });
       }
-    }
+      }
+    if (active.status === "Completed") {
+          containerButtons.innerHTML = `
+                <div class=" space-y-4">
+                   <button id="go-to-payment-btn" class="w-full bg-green-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
+                      <span class="material-icons">payment</span>
+                      Ir a Pagar
+                   </button>
+                </div>`;
+          const payBtn = containerButtons.querySelector("#go-to-payment-btn");
+          if (payBtn) {
+              payBtn.addEventListener("click", () => {
+                  //payBtn.disabled = true;
+                  payBtn.innerHTML = `<div class="spinner  w-5 h-5 border-2 border-white border-t-transparent"></div> Procediendo a pagar...`;
+
+                  setTimeout(() => {
+                      refreshReservaActiva();
+                      refreshHistorialReservas();
+                  }, 5000);
+                
+              });
+          };
+      }
   } catch (error) {
     console.error("Error cargando reserva activa:", error);
   }
@@ -435,9 +470,7 @@ async function loadProximaReserva() {
         // Botón No
         modal.querySelector("#modal-reservar-no").onclick = closeModal;
         // Botón Sí
-        modal
-          .querySelector("#modal-reservar-si")
-          .addEventListener("click", async function () {
+        modal.querySelector("#modal-reservar-si").addEventListener("click", async function () {
             modal.querySelector("#modal-reservar-si").disabled = true;
             modal.querySelector("#modal-reservar-si").textContent =
               "Confirmando...";
@@ -471,8 +504,10 @@ async function loadProximaReserva() {
               showConfirmationMessage();
               showSpinner();
               setTimeout(async () => {
-                await refreshAccordions();
-                closeModal();
+                  //await refreshAccordions();
+                  refreshProximaReserva();
+                  refreshReservaActiva();
+                  closeModal();
               }, 2000);
             } catch (error) {
               console.error("Error confirming reservation:", error);
@@ -521,7 +556,8 @@ async function loadProximaReserva() {
             hideButtons();
             showSpinner();
             setTimeout(async () => {
-              await refreshAccordions();
+                //await refreshAccordions();
+                refreshProximaReserva();
               closeModal();
             }, 2000);
           } catch (error) {
@@ -553,7 +589,7 @@ async function loadReservationHistory() {
 
   try {
     const { items: paidReservations } = await getUserReservations({
-      status: "Pending",
+      status: "Completed",
     }); //voy a setearlo a Pending para probar
 
     if (!paidReservations || paidReservations.length === 0) {
@@ -781,25 +817,25 @@ function hideButtons() {
   if (cancelBtn) cancelBtn.classList.add("hidden");
 }
 
+
+
 async function refreshAccordions() {
   const proximaContent = document.getElementById("proxima-content");
   const activeContent = document.getElementById("active-content");
   const historialContent = document.getElementById("historial-content");
-  console.log("Actualizando acordeones1...");
+  
   if (!proximaContent || !activeContent || !historialContent) return;
-  console.log("Actualizando acordeones2...");
-
+  
   try {
     // Volvemos a cargar ambas secciones
     await loadActiveReservation();
     await loadProximaReserva();
     await loadReservationHistory();
-    console.log("Actualizando acordeones3...");
-    // Expandir el acordeón de reserva activa
+  // Expandir el acordeón de reserva activa
     const activeArrow = document.getElementById("active-arrow");
     activeContent.classList.add("active");
     if (activeArrow) activeArrow.classList.add("rotated");
-    console.log("Actualizando acordeones4...");
+  
   } catch (error) {
     console.error("Error actualizando acordeones:", error);
     //proximaContent.innerHTML = `<p class="text-red-400 p-4">Error al actualizar.</p>`;
@@ -807,6 +843,56 @@ async function refreshAccordions() {
     hideSpinner();
   }
 }
+
+async function refreshProximaReserva() {
+    const proximaContent = document.getElementById("proxima-content");
+    const proximaArrow = document.getElementById("proxima-arrow");
+    if (!proximaContent) return;
+    showSpinner();
+    try {
+        await loadProximaReserva();
+        proximaContent.classList.add("active");
+        if (proximaArrow) proximaArrow.classList.add("rotated");
+    } catch (error) {
+        console.error("Error al actualizar la próxima reserva:", error);
+    }
+    finally {
+        hideSpinner();
+    }
+}
+
+async function refreshReservaActiva() {
+    const activeContent = document.getElementById("active-content");
+    const activeArrow = document.getElementById("active-arrow");
+    if (!activeContent) return;
+    showSpinner();
+    try {
+        await loadActiveReservation();
+        // Expandir el acordeón automáticamente
+        activeContent.classList.add("active");
+        if (activeArrow) activeArrow.classList.add("rotated");
+    } catch (error) {
+        console.error("Error al actualizar la reserva activa:", error);
+    }
+    finally {
+        hideSpinner();
+    }
+}
+
+async function refreshHistorialReservas() {
+    const historialContent = document.getElementById("historial-content");
+    if (!historialContent) return;
+    showSpinner();
+    try {
+        await loadReservationHistory();
+    } catch (error) {
+        console.error("Error al actualizar el historial de reservas:", error);
+    }
+    finally {
+        hideSpinner();
+    }
+}
+
 
 async function handleOpenVehicle(reservation) {
   const container = document.getElementById("active-buttons");
