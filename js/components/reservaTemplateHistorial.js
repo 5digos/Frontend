@@ -2,17 +2,24 @@
 export function reservaTemplateHistorial(prefix = "") {
     const p = id => `${prefix}-${id}`;
     return `
-    <!-- Imagen -->
-    <div class="relative">
-      <div class="aspect-[4/3] overflow-hidden">
-        <img id="${p('vehicle-image')}" src="" alt="" class="w-full h-full object-cover" />
-      </div>
-      <div id="${p('vehicle-title')}" class="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1 rounded-lg">
-        <span class="font-semibold">Cargando...</span>
-      </div>
+    <!-- Imagen clickable -->
+    <div class="relative cursor-pointer" onclick="toggleAccordion('main', '${prefix}')">
+    <div class="aspect-[4/3] overflow-hidden">
+        <img id="${p('vehicle-image')}" src="" alt="" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
     </div>
+    <div id="${p('vehicle-title')}" class="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1 rounded-lg">
+        <span class="font-semibold">Cargando...</span>
+    </div>
+    <div class="absolute bottom-3 right-3">
+        <svg id="${p('main-arrow')}" class="w-6 h-6 text-white transition-transform duration-300 accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </div>
+</div>
+
+<!-- Contenido que se despliega -->
+<div id="${p('main-content')}" class="accordion-content transition-all duration-500 ease-in-out max-h-0 overflow-hidden ">
     <div class="p-4 space-y-4">
-      <div id="${p('confirmationMessage')}"></div>
       <div class="bg-accordion border border-gray-600 rounded-lg shadow-sm">
         <button onclick="toggleAccordion('vehicle', '${prefix}')" class="w-full p-4 flex items-center justify-between rounded-t-lg accordion-hover">
           <div class="flex items-center gap-3">
@@ -157,6 +164,19 @@ export function reservaTemplateHistorial(prefix = "") {
             </div>
           </div>
         </div>
+      </div>
+      <div class="bg-accordion border border-gray-600 rounded-lg shadow-sm">
+        <button onclick="toggleAccordion('paid', '${prefix}')" class="w-full p-4 flex items-center justify-between rounded-t-lg accordion-hover">
+            <div class="flex items-center gap-3">
+                <span class="material-icons text-yellow-400 text-xl">paid</span>
+                <span class="font-semibold text-white">Datos del Pago</span>
+            </div>
+            <svg id="${p('paid-arrow')}" class="w-5 h-5 text-gray-400 accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </button>
+        <div id="${p('paid-content')}" class="accordion-content"></div>
+       </div>
       </div>
     </div>
   `;

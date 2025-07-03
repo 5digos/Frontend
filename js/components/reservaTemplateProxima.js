@@ -5,7 +5,7 @@ export function reservaTemplateProxima(prefix = "") {
     <!-- Imagen -->
     <div class="relative">
       <div class="aspect-[4/3] overflow-hidden">
-        <img id="${p('vehicle-image')}" src="" alt="" class="w-full h-full object-cover" />
+        <img id="${p('vehicle-image')}" src="" alt="" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
       </div>
       <div id="${p('vehicle-title')}" class="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-1 rounded-lg">
         <span class="font-semibold">Cargando...</span>

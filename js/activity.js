@@ -62,7 +62,9 @@ async function loadActiveReservation() {
   }
   containerActive.classList.add("active");
   const activeArrow = document.getElementById("active-arrow");
-  if (activeArrow) activeArrow.classList.add("rotated");
+    if (activeArrow) activeArrow.classList.add("rotated");
+    containerActive.innerHTML = ""; // Limpio el contenido anterior
+    containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando reserva activa...</p>`;
 
   const p = (id) => `#active-${id}`;
 
@@ -73,7 +75,7 @@ async function loadActiveReservation() {
         const { items: allReservations } = await getUserReservations();
 
         if (!allReservations || allReservations.length === 0) {
-            containerActive.innerHTML = `<p class="p-4 text-stone-300 text-sm italic text-center">No hay reservas activas.</p>`;
+            containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas activas.</p>`;
             return;
         }
 
@@ -86,7 +88,7 @@ async function loadActiveReservation() {
 
         const active = sorted[0];
         if (!active || active.status === "Pending") {
-            containerActive.innerHTML = `<p class="p-4 text-stone-300 text-sm italic text-center">No hay reservas activas.</p>`;
+            containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas activas.</p>`;
             return;
         }
        
@@ -98,6 +100,8 @@ async function loadActiveReservation() {
             getReservationById(active.reservationId),
             getVehicleById(active.vehicleId),
         ]);
+
+        
 
         // VEHÍCULO
         containerActive.querySelector(`${p("vehicle-image")}`).src =
@@ -172,50 +176,54 @@ async function loadActiveReservation() {
     containerButtons.innerHTML = "";
 
     if (active.status === "Confirmed") {
-      //handleOpenVehicle(resDetail);
 
-      containerButtons.innerHTML = `
-                <div class=" space-y-4">
-                   <button id="open-vehicle-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
-                      <span class="material-icons">nfc</span>
-                      Abrir Vehículo (NFC)
-                   </button>
-                </div>`;
-      const openBtn = containerButtons.querySelector("#open-vehicle-btn");
-      if (openBtn) {
-          openBtn.addEventListener("click", async () => {
-              try {
-                  openBtn.disabled = true;
-                  openBtn.innerHTML = `<div class="spinner w-5 h-5 border-2 border-white border-t-transparent"></div> Retirando...`;
+          showConfirmationMessage();
 
-                  const updated = await pickupReservation(resDetail.reservationId);
+          containerButtons.innerHTML = `
+                    <div class=" space-y-4">
+                       <button id="open-vehicle-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
+                          <span class="material-icons">nfc</span>
+                          Abrir Vehículo (NFC)
+                       </button>
+                    </div>`;
+          const openBtn = containerButtons.querySelector("#open-vehicle-btn");
+          if (openBtn) {
+              openBtn.addEventListener("click", async () => {
+                  try {
+                      openBtn.disabled = true;
+                      openBtn.innerHTML = `<div class="spinner w-5 h-5 border-2 border-white border-t-transparent"></div> Retirando...`;
 
-                  console.log("Simulando apertura de vehículo vía NFC");
-                  // Actualizá los horarios reales
-                  containerActive.querySelector(p("res-date-real-start")).textContent = formatDate(updated.actualPickupTime);
-                  containerActive.querySelector(p("res-time-real-start")).textContent = formatTime(updated.actualPickupTime);
+                      const updated = await pickupReservation(resDetail.reservationId);
 
-                  // Desactivá el botón y cambiá su estado
-                  openBtn.innerHTML = `<span class="material-icons">lock_open</span> Vehículo retirado`;
-                  openBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
-                  openBtn.classList.add("bg-gray-600", "cursor-not-allowed", "pointer-events-none");
+                      console.log("Simulando apertura de vehículo vía NFC");
+                      // Actualizá los horarios reales
+                      containerActive.querySelector(p("res-date-real-start")).textContent = formatDate(updated.actualPickupTime);
+                      containerActive.querySelector(p("res-time-real-start")).textContent = formatTime(updated.actualPickupTime);
 
-                  setTimeout(() => {
-                      refreshReservaActiva();
-                  }, 5000);
-              } catch (error) {
-                  console.error("Error retirando vehículo:", err);
-                  alert("Error al retirar el vehículo: " + err.message);
-                  openBtn.disabled = false;
-                  openBtn.innerHTML = `<span class="material-icons">nfc</span> Abrir Vehículo (NFC)`;
+                      // Desactivá el botón y cambiá su estado
+                      openBtn.innerHTML = `<span class="material-icons">lock_open</span> Vehículo retirado`;
+                      openBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
+                      openBtn.classList.add("bg-gray-600", "cursor-not-allowed", "pointer-events-none");
+                      showSpinner();
+                      setTimeout(() => {
+                          
+                          refreshReservaActiva();
+                      }, 1000);
+                  } catch (error) {
+                      console.error("Error retirando vehículo:", err);
+                      alert("Error al retirar el vehículo: " + err.message);
+                      openBtn.disabled = false;
+                      openBtn.innerHTML = `<span class="material-icons">nfc</span> Abrir Vehículo (NFC)`;
 
-              }
+                  }
 
         });
       }
     }
-    if (active.status === "InProgress") {
-      
+        if (active.status === "InProgress") {
+
+            showRetiredVehicleMessage();
+
       containerButtons.innerHTML = `
                 <div class=" space-y-4">
                    <button id="return-vehicle-btn" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2 mt-4">
@@ -240,9 +248,11 @@ async function loadActiveReservation() {
                     returnBtn.classList.remove("bg-orange-600", "hover:bg-orange-700");
                     returnBtn.classList.add("bg-gray-600", "cursor-not-allowed", "pointer-events-none");
 
+                        showSpinner();
                     setTimeout(() => {
                         refreshReservaActiva();
-                    }, 5000);
+                        refreshHistorialReservas();
+                    }, 1000);
 
                 } catch (err) {
 
@@ -255,7 +265,10 @@ async function loadActiveReservation() {
         });
       }
       }
-    if (active.status === "Completed") {
+        if (active.status === "Completed") {
+
+            showReturnedVehicleMessage(); 
+
           containerButtons.innerHTML = `
                 <div class=" space-y-4">
                    <button id="go-to-payment-btn" class="w-full bg-green-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
@@ -269,10 +282,11 @@ async function loadActiveReservation() {
                   //payBtn.disabled = true;
                   payBtn.innerHTML = `<div class="spinner  w-5 h-5 border-2 border-white border-t-transparent"></div> Procediendo a pagar...`;
 
+                  showSpinner();
                   setTimeout(() => {
                       refreshReservaActiva();
                       refreshHistorialReservas();
-                  }, 5000);
+                  }, 1000);
                 
               });
           };
@@ -283,17 +297,19 @@ async function loadActiveReservation() {
 }
 
 async function loadProximaReserva() {
-  const containerProxima = document.getElementById("proxima-content");
-  if (!containerProxima) {
+    const containerProxima = document.getElementById("proxima-content");
+    if (!containerProxima) {
     console.error("No se encontró el contenedor proxima-content");
     return; // evitar errores posteriores
-  }
-  containerProxima.classList.add("active");
-  const arrow = document.getElementById("proxima-arrow");
-  if (arrow) arrow.classList.add("rotated");
-
+    }
+    containerProxima.classList.add("active");
+    const arrow = document.getElementById("proxima-arrow");
+    if (arrow) arrow.classList.add("rotated");
+    containerProxima.innerHTML = ""; // Limpio el contenido anterior
+    containerProxima.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando próxima reserva...</p>`;
+    
   // Espera a que el DOM esté estable antes de buscar elementos
-  await new Promise((resolve) => setTimeout(resolve, 100)); // <<== importante
+  //await new Promise((resolve) => setTimeout(resolve, 100)); // <<== importante
 
   try {
     const { items: pendings } = await getUserReservations({
@@ -444,7 +460,7 @@ async function loadProximaReserva() {
     if (confirmBtn) {
       confirmBtn.addEventListener("click", async () => {
         // Mostrar modal de confirmación
-        console.log("Mostrando modal de confirmación...");
+        
         let modal = document.getElementById("modal-confirmar-reserva");
         if (!modal) {
           modal = document.createElement("div");
@@ -461,7 +477,7 @@ async function loadProximaReserva() {
                         </div>
                       </div>
                       `;
-          console.log("añado modal de confirmación");
+          
           document.body.appendChild(modal);
         } else {
           modal.style.display = "flex";
@@ -501,14 +517,14 @@ async function loadProximaReserva() {
                 resDetail.reservationId
               );
               hideButtons();
-              showConfirmationMessage();
+              //showConfirmationMessage();
               showSpinner();
               setTimeout(async () => {
                   //await refreshAccordions();
                   refreshProximaReserva();
                   refreshReservaActiva();
                   closeModal();
-              }, 2000);
+              }, 1000);
             } catch (error) {
               console.error("Error confirming reservation:", error);
               confirmBtn.disabled = false;
@@ -559,7 +575,7 @@ async function loadProximaReserva() {
                 //await refreshAccordions();
                 refreshProximaReserva();
               closeModal();
-            }, 2000);
+            }, 1000);
           } catch (error) {
             console.error("Error cancelando reserva:", error);
             cancelBtn.disabled = false;
@@ -589,7 +605,7 @@ async function loadReservationHistory() {
 
   try {
     const { items: paidReservations } = await getUserReservations({
-      status: "Completed",
+      status: "Confirmed",
     }); //voy a setearlo a Pending para probar
 
     if (!paidReservations || paidReservations.length === 0) {
@@ -627,35 +643,19 @@ async function loadReservationHistory() {
       const p = (id) => `${prefix}-${id}`;
 
       // Datos del vehículo
-      wrapper.querySelector(`#${p("vehicle-image")}`).src =
-        vehicleDetail.vehicle.imageUrl;
-      wrapper.querySelector(
-        `#${p("vehicle-image")}`
-      ).alt = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
-      wrapper.querySelector(
-        `#${p("vehicle-title")} span`
-      ).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model} ${vehicleDetail.vehicle.year}`;
-      wrapper.querySelector(
-        `#${p("vehicle-brand-model")}`
-      ).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
-      wrapper.querySelector(`#${p("vehicle-year")}`).textContent =
-        vehicleDetail.vehicle.year;
-      wrapper.querySelector(`#${p("vehicle-plate")}`).textContent =
-        vehicleDetail.vehicle.licensePlate;
-      wrapper.querySelector(`#${p("vehicle-price")}`).textContent = `$${Number(
-        vehicleDetail.vehicle.price
-      ).toLocaleString()}`;
-      wrapper.querySelector(`#${p("vehicle-seats")}`).textContent =
-        vehicleDetail.vehicle.seatingCapacity;
-      wrapper.querySelector(`#${p("vehicle-transmission")}`).textContent =
-        vehicleDetail.vehicle.transmissionType.name;
-      wrapper.querySelector(`#${p("vehicle-category")}`).textContent =
-        vehicleDetail.vehicle.category.name;
+      wrapper.querySelector(`#${p("vehicle-image")}`).src =vehicleDetail.vehicle.imageUrl;
+      wrapper.querySelector(`#${p("vehicle-image")}`).alt = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
+      wrapper.querySelector(`#${p("vehicle-title")} span`).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model} ${vehicleDetail.vehicle.year}`;
+      wrapper.querySelector(`#${p("vehicle-brand-model")}`).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
+      wrapper.querySelector(`#${p("vehicle-year")}`).textContent =vehicleDetail.vehicle.year;
+      wrapper.querySelector(`#${p("vehicle-plate")}`).textContent =vehicleDetail.vehicle.licensePlate;
+      wrapper.querySelector(`#${p("vehicle-price")}`).textContent = `$${Number(vehicleDetail.vehicle.price).toLocaleString()}`;
+      wrapper.querySelector(`#${p("vehicle-seats")}`).textContent =vehicleDetail.vehicle.seatingCapacity;
+      wrapper.querySelector(`#${p("vehicle-transmission")}`).textContent =vehicleDetail.vehicle.transmissionType.name;
+      wrapper.querySelector(`#${p("vehicle-category")}`).textContent =vehicleDetail.vehicle.category.name;
 
       // Documentos
-      const docsContainer = wrapper.querySelector(
-        `#${p("documents-container")}`
-      );
+      const docsContainer = wrapper.querySelector(`#${p("documents-container")}`);
       docsContainer.innerHTML = "";
       vehicleDetail.documents.forEach((doc) => {
         const div = document.createElement("div");
@@ -679,10 +679,8 @@ async function loadReservationHistory() {
       });
 
       // Datos de reserva
-      wrapper.querySelector(`#${p("pickup-office-name")}`).textContent =
-        resDetail.pickupBranchOfficeName;
-      wrapper.querySelector(`#${p("dropoff-office-name")}`).textContent =
-        resDetail.dropOffBranchOfficeName;
+      wrapper.querySelector(`#${p("pickup-office-name")}`).textContent =resDetail.pickupBranchOfficeName;
+      wrapper.querySelector(`#${p("dropoff-office-name")}`).textContent =resDetail.dropOffBranchOfficeName;
 
       const [pickupInfo, dropoffInfo] = await Promise.all([
         getBranchOfficeById(resDetail.pickupBranchOfficeId),
@@ -690,65 +688,39 @@ async function loadReservationHistory() {
       ]);
 
       // Pickup
-      wrapper
-        .querySelector(`#${p("pickup-office-details")}`)
-        .classList.remove("hidden");
-      wrapper.querySelector(
-        `#${p("pickup-office-address")}`
-      ).textContent = `${pickupInfo.address}, ${pickupInfo.city}`;
-      wrapper.querySelector(`#${p("pickup-office-phone")}`).textContent =
-        pickupInfo.phone;
-      wrapper.querySelector(`#${p("pickup-office-reference")}`).textContent =
-        pickupInfo.locationReference;
+      wrapper.querySelector(`#${p("pickup-office-details")}`).classList.remove("hidden");
+      wrapper.querySelector(`#${p("pickup-office-address")}`).textContent = `${pickupInfo.address}, ${pickupInfo.city}`;
+      wrapper.querySelector(`#${p("pickup-office-phone")}`).textContent =pickupInfo.phone;
+      wrapper.querySelector(`#${p("pickup-office-reference")}`).textContent =pickupInfo.locationReference;
 
       // Dropoff
-      wrapper
-        .querySelector(`#${p("dropoff-office-details")}`)
-        .classList.remove("hidden");
-      wrapper.querySelector(
-        `#${p("dropoff-office-address")}`
-      ).textContent = `${dropoffInfo.address}, ${dropoffInfo.city}`;
-      wrapper.querySelector(`#${p("dropoff-office-phone")}`).textContent =
-        dropoffInfo.phone;
-      wrapper.querySelector(`#${p("dropoff-office-reference")}`).textContent =
-        dropoffInfo.locationReference;
+      wrapper.querySelector(`#${p("dropoff-office-details")}`).classList.remove("hidden");
+      wrapper.querySelector(`#${p("dropoff-office-address")}`).textContent = `${dropoffInfo.address}, ${dropoffInfo.city}`;
+      wrapper.querySelector(`#${p("dropoff-office-phone")}`).textContent =dropoffInfo.phone;
+      wrapper.querySelector(`#${p("dropoff-office-reference")}`).textContent =dropoffInfo.locationReference;
 
       // Fechas programadas
-      wrapper.querySelector(`#${p("res-date-start")}`).textContent = formatDate(
-        resDetail.startTime
-      );
-      wrapper.querySelector(`#${p("res-time-start")}`).textContent = formatTime(
-        resDetail.startTime
-      );
-      wrapper.querySelector(`#${p("res-date-end")}`).textContent = formatDate(
-        resDetail.endTime
-      );
-      wrapper.querySelector(`#${p("res-time-end")}`).textContent = formatTime(
-        resDetail.endTime
-      );
+      wrapper.querySelector(`#${p("res-date-start")}`).textContent = formatDate(resDetail.startTime);
+      wrapper.querySelector(`#${p("res-time-start")}`).textContent = formatTime(resDetail.startTime);
+      wrapper.querySelector(`#${p("res-date-end")}`).textContent = formatDate(resDetail.endTime);
+      wrapper.querySelector(`#${p("res-time-end")}`).textContent = formatTime(resDetail.endTime);
 
       // Fechas reales
-      wrapper.querySelector(`#${p("res-date-real-start")}`).textContent =
-        resDetail.actualPickupTime
-          ? formatDate(resDetail.actualPickupTime)
-          : "-";
-      wrapper.querySelector(`#${p("res-time-real-start")}`).textContent =
-        resDetail.actualPickupTime
-          ? formatTime(resDetail.actualPickupTime)
-          : "-";
-      wrapper.querySelector(`#${p("res-date-real-end")}`).textContent =
-        resDetail.actualReturnTime
-          ? formatDate(resDetail.actualReturnTime)
-          : "-";
-      wrapper.querySelector(`#${p("res-time-real-end")}`).textContent =
-        resDetail.actualReturnTime
-          ? formatTime(resDetail.actualReturnTime)
-          : "-";
-    }
-  } catch (error) {
-    console.error("Error al cargar historial de reservas:", error);
-    containerHistorial.innerHTML = `<p class="p-4 text-red-400 text-sm italic text-center">Hubo un error al cargar el historial.</p>`;
-  }
+      wrapper.querySelector(`#${p("res-date-real-start")}`).textContent =resDetail.actualPickupTime? formatDate(resDetail.actualPickupTime): "-";
+      wrapper.querySelector(`#${p("res-time-real-start")}`).textContent =resDetail.actualPickupTime? formatTime(resDetail.actualPickupTime): "-";
+      wrapper.querySelector(`#${p("res-date-real-end")}`).textContent =resDetail.actualReturnTime? formatDate(resDetail.actualReturnTime): "-";
+        wrapper.querySelector(`#${p("res-time-real-end")}`).textContent = resDetail.actualReturnTime ? formatTime(resDetail.actualReturnTime) : "-";
+
+
+        // Datos del pago
+        wrapper.querySelector(`#${p("paid-content")}`).innerHTML = `<p class="p-4 text-red-400 text-sm italic text-center">Todavía no hay información de pago.</p>`;
+
+
+        }     
+      } catch (error) {
+        console.error("Error al cargar historial de reservas:", error);
+        containerHistorial.innerHTML = `<p class="p-4 text-red-400 text-sm italic text-center">Hubo un error al cargar el historial.</p>`;
+        }
 }
 
 window.toggleAccordion = toggleAccordion;
@@ -796,18 +768,50 @@ export function waitForElement(id, timeout = 5000) {
 
 // Muestra el mensaje de confirmación en el contenedor correcto dentro de proxima-content
 function showConfirmationMessage() {
-  // Usar el prefijo 'proxima' para el id correcto
-  const container = document.getElementById("proxima-confirmationMessage");
+
+  const container = document.getElementById("active-confirmationMessage");
   if (!container) {
-    console.error("No se encontró el contenedor proxima-confirmationMessage");
+    console.error("No se encontró el contenedor de confirmationMessage");
     return;
-  }
+    }
+    container.innerHTML = "";
   container.innerHTML = `
         <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center">
             <span class="material-icons text-green-400 text-3xl mb-2 block">check_circle</span>
             <h2 class="text-green-400 font-semibold text-lg mb-1">¡Reserva Confirmada!</h2>
             <p class="text-gray-300 text-sm">Tu reserva ha sido confirmada exitosamente. Ya puedes retirar tu vehículo.</p>
         </div>`;
+}
+function showRetiredVehicleMessage() {
+
+    const container = document.getElementById("active-confirmationMessage");
+    if (!container) {
+        console.error("No se encontró el contenedor de confirmationMessage");
+        return;
+    }
+    container.innerHTML = "";
+    container.innerHTML = `
+       <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center">
+        <span class="material-icons text-blue-400 text-3xl mb-2 block">nfc</span>
+        <h2 class="text-blue-400 font-semibold text-lg mb-1">¡Vehículo Abierto!</h2>
+        <p class="text-gray-300 text-sm">Has retirado el vehículo exitosamente. Disfruta tu viaje.</p>
+      </div>`;
+}
+
+function showReturnedVehicleMessage() {
+
+    const container = document.getElementById("active-confirmationMessage");
+    if (!container) {
+        console.error("No se encontró el contenedor de confirmationMessage");
+        return;
+    }
+    container.innerHTML = "";
+    container.innerHTML = `
+        <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center">
+        <span class="material-icons text-green-400 text-3xl mb-2 block">done_all</span>
+        <h2 class="text-green-400 font-semibold text-lg mb-1">¡Reserva Completada!</h2>
+        <p class="text-gray-300 text-sm">Has devuelto el vehículo exitosamente. Gracias por usar nuestro servicio.</p>
+      </div>`;
 }
 
 function hideButtons() {
@@ -816,7 +820,6 @@ function hideButtons() {
   if (confirmBtn) confirmBtn.classList.add("hidden");
   if (cancelBtn) cancelBtn.classList.add("hidden");
 }
-
 
 
 async function refreshAccordions() {

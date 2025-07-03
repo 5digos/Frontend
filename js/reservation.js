@@ -452,15 +452,26 @@ export async function reservarVehiculo(vehicleId) {
     // Botón Sí
     modal.querySelector("#modal-reservar-si").onclick = async function () {
       modal.querySelector("#modal-reservar-si").disabled = true;
-      modal.querySelector("#modal-reservar-si").textContent = "Creando...";
+        modal.querySelector("#modal-reservar-si").textContent = "Creando...";
+
+        const toLocalISOString = (date) => {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, "0");
+            const dd = String(date.getDate()).padStart(2, "0");
+            const hh = String(date.getHours()).padStart(2, "0");
+            const min = String(date.getMinutes()).padStart(2, "0");
+            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+        };
+
 
       // Preparar el cuerpo de la solicitud según el formato exacto del endpoint
       const requestBody = {
         vehicleId: vehicleId,
         pickupBranchOfficeId: reservationData.branchInicio,
         dropOffBranchOfficeId: reservationData.branchDestino,
-        startTime: reservationData.fechaHoraInicio.toISOString(),
-        endTime: reservationData.fechaHoraDevolucion.toISOString(),
+        startTime: toLocalISOString(reservationData.fechaHoraInicio),
+        endTime: toLocalISOString(reservationData.fechaHoraDevolucion),
+
       };
 
       showSpinner();

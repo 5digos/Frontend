@@ -13,7 +13,7 @@
   background-color: var(--color-red-500);
 }
 .btn-confirmar:hover:not(:disabled) {
-  filter: brightness(0.9);
+  filter: brightness(0.7);
 }
 .btn-cancelar {
   background-color: transparent;
