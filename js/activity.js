@@ -600,14 +600,14 @@ async function loadReservationHistory() {
   containerHistorial.classList.add("active");
   const arrow = document.getElementById("historial-arrow");
   if (arrow) arrow.classList.add("rotated");
-  containerHistorial.innerHTML = ""; // Limpio el contenido anterior
+    containerHistorial.innerHTML = ""; // Limpio el contenido anterior
   containerHistorial.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando historial de reservas...</p>`;
 
   try {
     const { items: paidReservations } = await getUserReservations({
       status: "Confirmed",
     }); //voy a setearlo a Pending para probar
-
+      
     if (!paidReservations || paidReservations.length === 0) {
       containerHistorial.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas previas pagadas.</p>`;
       return;
@@ -628,9 +628,17 @@ async function loadReservationHistory() {
         getVehicleById(res.vehicleId),
       ]);
 
-      const prefix = `historial-${res.reservationId}`;
-      const wrapper = document.createElement("div");
-      wrapper.classList.add(
+        const prefix = `historial-${res.reservationId}`;
+
+        // DEBUG EXPRESS: evitar duplicación de cards
+        if (document.getElementById(`${prefix}-wrapper`)) {
+            console.warn(`Ya existe una card para ${res.reservationId}, se evita duplicación`);
+            continue;
+        }
+        const wrapper = document.createElement("div");
+        wrapper.id = `${prefix}-wrapper`; 
+
+        wrapper.classList.add(
         "mb-8",
         "rounded-lg",
         "overflow-hidden",
