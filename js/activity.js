@@ -17,13 +17,29 @@ import { hideSpinner, showSpinner } from "./components/spinners.js";
 
 export async function initializeActivityPage() {
   try {
+    console.log("🚀 Iniciando inicialización de Activity Page...");
     showSpinner();
+    
+    // Verificar elementos antes de continuar
+    const activeContent = document.getElementById("active-content");
+    const proximaContent = document.getElementById("proxima-content");
+    const historialContent = document.getElementById("historial-content");
+    
+    console.log("Verificación de elementos:");
+    console.log("- active-content:", activeContent);
+    console.log("- proxima-content:", proximaContent);
+    console.log("- historial-content:", historialContent);
+    
+    // Cargar reservas (las funciones manejarán la ausencia de elementos)
     await loadActiveReservation();
     await loadProximaReserva();
     await loadReservationHistory();
+    
     hideSpinner();
+    console.log("✅ Activity Page inicializada correctamente");
   } catch (error) {
-    console.error("Error inicializando ActivityPage:", error);
+    console.error("❌ Error inicializando ActivityPage:", error);
+    hideSpinner();
   }
 }
 
@@ -57,11 +73,16 @@ export function toggleAccordion(id, prefix = "") {
 }
 
 async function loadActiveReservation() {
-  const containerActive = document.getElementById("active-content");
+  console.log("📋 Iniciando carga de reserva activa...");
+  
+  let containerActive = document.getElementById("active-content");
   if (!containerActive) {
-    console.error("No se encontró el contenedor active-content");
+    console.warn("⚠️ No se encontró el contenedor active-content");
     return;
   }
+  
+  console.log("✅ Contenedor active-content encontrado:", containerActive);
+  
   containerActive.classList.add("active");
   const activeArrow = document.getElementById("active-arrow");
   if (activeArrow) activeArrow.classList.add("rotated");
@@ -72,9 +93,9 @@ async function loadActiveReservation() {
 
   try {
     const { items: allReservations } = await getUserReservations();
-
+    console.log("[Depuración] allReservations:", allReservations);
     if (!allReservations || allReservations.length === 0) {
-      containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas activas.</p>`;
+      containerActive.innerHTML = `<p class='p-4 text-gray-400 text-sm italic text-center'>No tienes reservas activas.</p>`;
       return;
     }
 
@@ -317,11 +338,28 @@ async function loadActiveReservation() {
 }
 
 async function loadProximaReserva() {
-  const containerProxima = document.getElementById("proxima-content");
+  console.log("📅 Iniciando carga de próxima reserva...");
+  
+  let containerProxima = document.getElementById("proxima-content");
   if (!containerProxima) {
-    console.error("No se encontró el contenedor proxima-content");
-    return; // evitar errores posteriores
+    console.warn("⚠️ No se encontró el contenedor proxima-content, intentando crearlo...");
+    
+    // Buscar el botón de próxima reserva para encontrar el contenedor padre
+    const proximaButton = document.querySelector('button[onclick="toggleAccordion(\'proxima\')"]');
+    if (proximaButton && proximaButton.parentElement) {
+      containerProxima = document.createElement('div');
+      containerProxima.id = 'proxima-content';
+      containerProxima.className = 'accordion-content';
+      proximaButton.parentElement.appendChild(containerProxima);
+      console.log("✅ Contenedor proxima-content creado dinámicamente");
+    } else {
+      console.error("❌ No se pudo crear proxima-content - botón padre no encontrado");
+      return; // evitar errores posteriores
+    }
   }
+  
+  console.log("✅ Contenedor proxima-content encontrado:", containerProxima);
+  
   containerProxima.classList.add("active");
   const arrow = document.getElementById("proxima-arrow");
   if (arrow) arrow.classList.add("rotated");
@@ -613,12 +651,16 @@ async function loadProximaReserva() {
 }
 
 async function loadReservationHistory() {
-  console.log("Loading reservation history...");
-  const containerHistorial = document.getElementById("historial-content");
+  console.log("📜 Iniciando carga de historial de reservas...");
+  
+  let containerHistorial = document.getElementById("historial-content");
   if (!containerHistorial) {
-    console.error("No se encontró el contenedor historial-content");
+    console.warn("⚠️ No se encontró el contenedor historial-content");
     return;
   }
+  
+  console.log("✅ Contenedor historial-content encontrado:", containerHistorial);
+  
   containerHistorial.classList.add("active");
   const arrow = document.getElementById("historial-arrow");
   if (arrow) arrow.classList.add("rotated");
