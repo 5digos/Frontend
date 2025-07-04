@@ -173,11 +173,22 @@ export async function renderVehicleCards(
       return;
     }
     const form = getReservationForm();
+    
+    // Helper para convertir Date a formato ISO local (sin conversión UTC)
+    const toLocalISOString = (date) => {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      const hh = String(date.getHours()).padStart(2, "0");
+      const min = String(date.getMinutes()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+    };
+    
     const filters = {
       pickupBranchOfficeId: data.branchInicio,
       dropOffBranchOfficeId: data.branchDestino,
-      startTime: data.fechaHoraInicio.toISOString(),
-      endTime: data.fechaHoraDevolucion.toISOString(),
+      startTime: toLocalISOString(parseDateTime(data.fechaHoraInicio)),
+      endTime: toLocalISOString(parseDateTime(data.fechaHoraDevolucion)),
       category: form.category,
       seatingCapacity: form.seatingCapacity,
       transmissionType: form.transmission,
@@ -185,6 +196,15 @@ export async function renderVehicleCards(
       color: form.color,
       brand: form.brand,
     };
+    
+    // Debug para verificar que los datos están correctos
+    console.log('=== DEBUG FILTROS ===');
+    console.log('data.fechaHoraInicio:', data.fechaHoraInicio, typeof data.fechaHoraInicio);
+    console.log('data.fechaHoraDevolucion:', data.fechaHoraDevolucion, typeof data.fechaHoraDevolucion);
+    console.log('parseDateTime(data.fechaHoraInicio):', parseDateTime(data.fechaHoraInicio));
+    console.log('filters.startTime:', filters.startTime);
+    console.log('filters.endTime:', filters.endTime);
+    console.log('=== FIN DEBUG FILTROS ===');
     const vehicles = await getAvailableVehicles(filters);
     if (!Array.isArray(vehicles)) {
       throw new Error("La respuesta del servidor no es válida.");
@@ -263,6 +283,9 @@ export async function renderVehicleCards(
 
 // formulario de reserva
 export function setupReservationFormHandler() {
+  // Limpiar datos antiguos con formato incorrecto
+  clearOldReservationData();
+  
   const form = document.getElementById("reservation-form");
   if (!form) return;
 
@@ -289,31 +312,33 @@ export function setupReservationFormHandler() {
     const seatingCapacity = formData.get("seatingCapacity");
     const maxPrice = formData.get("maxPrice");
 
+    // Validar que todos los campos estén completos
+    if (
+      !branchInicio ||
+      !branchDestino ||
+      !fechaInicio ||
+      !horaInicio ||
+      !fechaDevolucion ||
+      !horaDevolucion
+    ) {
+      showAlert("Por favor completa todos los campos requeridos.", "error");
+      return;
+    }
+
+    // Validar que la fecha de devolución sea posterior a la de inicio
     if (fechaHoraDevolucion <= fechaHoraInicio) {
       showAlert(
         "La fecha/hora de devolución debe ser posterior a la de inicio.",
         "error"
       );
       return;
-
-      if (
-        !branchInicio ||
-        !branchDestino ||
-        !fechaInicio ||
-        !horaInicio ||
-        !fechaDevolucion ||
-        !horaDevolucion
-      ) {
-        showAlert("Por favor completa todos los campos requeridos.", "error");
-        return;
-      }
     }
 
     setReservationData({
       branchInicio,
       branchDestino,
-      fechaHoraInicio,
-      fechaHoraDevolucion,
+      fechaHoraInicio: `${fechaInicio} ${horaInicio}`,
+      fechaHoraDevolucion: `${fechaDevolucion} ${horaDevolucion}`,
     });
 
     setReservationForm({
@@ -327,6 +352,24 @@ export function setupReservationFormHandler() {
       seatingCapacity,
       maxPrice,
     });
+
+    // Debug temporal - remover después
+    console.log("=== DEBUG TEMPORAL ===");
+    console.log("INPUTS DEL FORMULARIO:");
+    console.log("fechaInicio:", fechaInicio);
+    console.log("horaInicio:", horaInicio);
+    console.log("fechaDevolucion:", fechaDevolucion);
+    console.log("horaDevolucion:", horaDevolucion);
+    console.log("STRINGS ALMACENADOS:");
+    console.log("Stored fechaHoraInicio:", `${fechaInicio} ${horaInicio}`);
+    console.log("Stored fechaHoraDevolucion:", `${fechaDevolucion} ${horaDevolucion}`);
+    console.log("DATOS EN LOCALSTORAGE:");
+    console.log("reservationData RAW:", localStorage.getItem('reservationData'));
+    console.log("reservationForm RAW:", localStorage.getItem('reservationForm'));
+    console.log("OBJETOS PARSEADOS:");
+    console.log("reservationData:", getReservationData());
+    console.log("reservationForm:", getReservationForm());
+    console.log("=== FIN DEBUG ===");
 
     loadPage("filtered-vehicles");
   });
@@ -391,9 +434,24 @@ export function prefillReservationForm() {
   setValue("maxPrice", state.maxPrice);
 }
 
-// combinar fecha y hora en un objeto Date
+// función helper para convertir string de fecha/hora a Date
+function parseDateTime(dateTimeString) {
+  // Formato esperado: "2025-01-15 14:00"
+  const [datePart, timePart] = dateTimeString.split(' ');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+  
+  return new Date(year, month - 1, day, hours, minutes);
+}
+
+// combinar fecha y hora en un objeto Date (mantener zona horaria local)
 function combineDateTime(date, hour) {
-  return new Date(`${date}T${hour}`);
+  // Parseamos la fecha manteniendo la zona horaria local
+  const [year, month, day] = date.split('-').map(Number);
+  const [hours, minutes] = hour.split(':').map(Number);
+  
+  // Crear el objeto Date con los componentes locales
+  return new Date(year, month - 1, day, hours, minutes);
 }
 
 // función global para reservar
@@ -469,8 +527,8 @@ export async function reservarVehiculo(vehicleId) {
         vehicleId: vehicleId,
         pickupBranchOfficeId: reservationData.branchInicio,
         dropOffBranchOfficeId: reservationData.branchDestino,
-        startTime: toLocalISOString(reservationData.fechaHoraInicio),
-        endTime: toLocalISOString(reservationData.fechaHoraDevolucion),
+        startTime: toLocalISOString(parseDateTime(reservationData.fechaHoraInicio)),
+        endTime: toLocalISOString(parseDateTime(reservationData.fechaHoraDevolucion)),
 
       };
 
@@ -520,3 +578,24 @@ export function setupMapIcons() {
     });
   });
 }
+
+// limpiar datos de reserva antiguos con formato incorrecto
+export function clearOldReservationData() {
+  console.log('=== LIMPIEZA FORZADA DE LOCALSTORAGE ===');
+  
+  // Mostrar datos actuales antes de limpiar
+  const currentData = localStorage.getItem('reservationData');
+  const currentForm = localStorage.getItem('reservationForm');
+  console.log('Datos actuales en localStorage:');
+  console.log('reservationData:', currentData);
+  console.log('reservationForm:', currentForm);
+  
+  // Limpiar TODOS los datos de reserva para empezar limpio
+  localStorage.removeItem('reservationData');
+  localStorage.removeItem('reservationForm');
+  
+  console.log('LocalStorage limpiado completamente');
+  console.log('=== FIN LIMPIEZA ===');
+}
+
+// Debug: Archivo actualizado a las 23:30 del 3 de julio de 2025 para solucionar desfasaje horario
