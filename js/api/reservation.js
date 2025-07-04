@@ -24,8 +24,10 @@ export const RESERVATION_URLS = {
 
 //Payment
 export const PAYMENT_URLS = {
-  GET_RESERVATION_SUMMARY: (id) =>
-    `${PAYMENT_BASE_URL}/Payment/reservation/${id}`,
+    GET_RESERVATION_SUMMARY: (id) => `${PAYMENT_BASE_URL}/Payment/reservation/${id}`,
+    POST_CREATE_PAYMENT_FROM_RESERVATION: `${PAYMENT_BASE_URL}/Payment/from-reservation`,
+    GET_PAYMENT_BY_ID: (id) => `${PAYMENT_BASE_URL}/Payment/${id}`,
+
 };
 
 // Funciones para consumir los endpoints de Reservation
@@ -232,9 +234,12 @@ export async function addReview(id, reviewData) {
 
 // Payment functions
 export async function getReservationSummaryForPayment(id) {
-  const res = await fetch(PAYMENT_URLS.GET_RESERVATION_SUMMARY(id), {
-    method: "GET",
-    headers: getAuthHeaders(),
+    const res = await fetch(PAYMENT_URLS.GET_RESERVATION_SUMMARY(id), {
+        method: "GET",
+        headers: {
+            ...getAuthHeaders() 
+            //,"Content-Type": "application/json",
+        },
   });
   if (!res.ok) {
     if (res.status === 404) {
@@ -264,5 +269,37 @@ export async function getReservationSummaryForPayment(id) {
       throw new Error(`Error ${res.status}: ${res.statusText}`);
     }
   }
-  return await res.json();
+  return await res.json(); //obtengo una reserva resumida que necesito para el pago
+}
+
+export async function postCreatePaymentFromReservation(reservationSummary) {
+    console.log(getAuthHeaders());
+    const res = await fetch(PAYMENT_URLS.POST_CREATE_PAYMENT_FROM_RESERVATION, {
+        method: "POST",
+        headers: {
+            ...getAuthHeaders(),
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(reservationSummary),
+    });
+    if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Error al procesar el pago de la reserva");
+    }
+    return await res.json(); //contiene checkoutURL y paymentId
+}
+
+export async function getPaymentByReservationId(id) {
+    const res = await fetch(PAYMENT_URLS.GET_PAYMENT_BY_ID(id), {
+        method: "GET",
+        headers: {
+            ...getAuthHeaders()
+            //,"Content-Type": "application/json",
+        }
+    });
+    if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Error al obtener el pago de la reserva");
+    }
+    return await res.json(); //devuelve un PaymentResponseDto
 }
