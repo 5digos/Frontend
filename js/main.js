@@ -6,11 +6,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     await waitForElement("#main");
     await waitForElement("#navbar");
 
-  if (!getAuthenticated()) {
-    loadLoginView();
-  } else {
-    initializeApp();
-  }
+    // --- INICIO: Manejo de parámetros de pago (sin hash) ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentResult = urlParams.get("payment");
+    if (["success", "failed", "pending"].includes(paymentResult)) {
+      // Opcional: puedes extraer payment_id y external_reference si los necesitas
+      const payment_id = urlParams.get("payment_id");
+      const external_reference = urlParams.get("external_reference");
+      // Cargar la vista correspondiente
+      loadPage(`payment-${paymentResult}`);
+      // Limpiar la URL para evitar recargas accidentales con el mismo resultado
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+    // --- FIN: Manejo de parámetros de pago ---
+
+    if (!getAuthenticated()) {
+      loadLoginView();
+    } else {
+      initializeApp();
+    }
 });
 
 export function loadLoginView() {

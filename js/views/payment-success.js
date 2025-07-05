@@ -1,8 +1,18 @@
 import { BASE_URL } from '../api/index.js';
 
 export function initPaymentSuccess() {
+    // Extraer payment_id de todos los posibles lugares
     const params = new URLSearchParams(window.location.search);
-    const paymentId = params.get("payment_id");
+    let paymentId = params.get("payment_id") || params.get("collection_id");
+    if (!paymentId && params.get("external_reference")) {
+        try {
+            const ref = JSON.parse(decodeURIComponent(params.get("external_reference")));
+            if (ref && ref.PaymentId) paymentId = ref.PaymentId;
+        } catch {
+            paymentId = params.get("external_reference");
+        }
+    }
+
     const countdownEl = document.getElementById("countdown");
     const loadingSpinner = document.getElementById("loading-spinner");
     const paymentDetails = document.getElementById("payment-details");
@@ -13,35 +23,41 @@ export function initPaymentSuccess() {
         try {
             const response = await fetch(`${BASE_URL}/payment/verify/${paymentId}`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                }
+                headers: { "Content-Type": "application/json" }
             });
-            
-            if (!response.ok) {
-                throw new Error("Error al verificar el pago");
-            }
+
+            if (!response.ok) throw new Error("Error al verificar el pago");
 
             const data = await response.json();
             localStorage.setItem("lastPayment", JSON.stringify(data));
 
-            // Ocultar spinner y mostrar detalles
             loadingSpinner?.classList.add("hidden");
             paymentDetails?.classList.remove("hidden");
 
-            // Mostrar información del pago
-            if (paymentInfo) {
-                paymentInfo.innerHTML = `
-                    <div class="text-green-400 font-semibold mb-2">✅ Pago confirmado exitosamente</div>
-                    <div><strong>ID Pago:</strong> ${data.paymentId}</div>
-                    <div><strong>ID Reserva:</strong> ${data.reservationId}</div>
-                    <div><strong>Total abonado:</strong> $${Number(data.amount).toLocaleString()}</div>
-                    <div><strong>Recargo por demora:</strong> $${Number(data.lateFee || 0).toLocaleString()}</div>
-                    <div><strong>Número de Transacción:</strong> ${data.transactionId}</div>
-                `;
+            // Mensaje según estado
+            let statusMsg = "";
+            let statusColor = "";
+            if (data.status === "approved" || data.status === "success") {
+                statusMsg = "✅ Pago confirmado exitosamente";
+                statusColor = "text-green-400";
+            } else if (data.status === "pending") {
+                statusMsg = "⏳ Pago pendiente de confirmación";
+                statusColor = "text-yellow-400";
+            } else {
+                statusMsg = "❌ Pago rechazado o fallido";
+                statusColor = "text-red-400";
             }
 
-            // Iniciar cuenta regresiva
+            paymentInfo.innerHTML = `
+                <div class="${statusColor} font-semibold mb-2">${statusMsg}</div>
+                <div><strong>ID Pago:</strong> ${data.paymentId || paymentId}</div>
+                <div><strong>ID Reserva:</strong> ${data.reservationId || '-'}</div>
+                <div><strong>Total abonado:</strong> $${Number(data.amount || 0).toLocaleString()}</div>
+                <div><strong>Recargo por demora:</strong> $${Number(data.lateFee || 0).toLocaleString()}</div>
+                <div><strong>Estado:</strong> ${data.status || '-'}</div>
+                <div><strong>Número de Transacción:</strong> ${data.transactionId || '-'}</div>
+            `;
+
             startCountdown();
 
         } catch (err) {
@@ -58,12 +74,9 @@ export function initPaymentSuccess() {
         let counter = 10;
         const timer = setInterval(() => {
             counter--;
-            if (countdownEl) {
-                countdownEl.textContent = counter;
-            }
+            if (countdownEl) countdownEl.textContent = counter;
             if (counter <= 0) {
                 clearInterval(timer);
-                // Usar la navegación SPA
                 if (typeof window.loadPage === 'function') {
                     window.loadPage('activity');
                 } else {
@@ -73,27 +86,19 @@ export function initPaymentSuccess() {
         }, 1000);
     }
 
-    // Event listeners para los botones
+    // Botones
     const activityBtn = document.getElementById("go-to-activity");
     const homeBtn = document.getElementById("go-to-home");
-
     activityBtn?.addEventListener("click", () => {
-        if (typeof window.loadPage === 'function') {
-            window.loadPage('activity');
-        } else {
-            window.location.hash = 'activity';
-        }
+        if (typeof window.loadPage === 'function') window.loadPage('activity');
+        else window.location.hash = 'activity';
     });
-
     homeBtn?.addEventListener("click", () => {
-        if (typeof window.loadPage === 'function') {
-            window.loadPage('home');
-        } else {
-            window.location.hash = 'home';
-        }
+        if (typeof window.loadPage === 'function') window.loadPage('home');
+        else window.location.hash = 'home';
     });
 
-    // Inicializar verificación del pago
+    // Inicializar
     if (paymentId) {
         verifyPayment();
     } else {

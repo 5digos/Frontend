@@ -49,24 +49,67 @@
             min-height: 100vh;
             padding: 1rem;
         }
+
+        .centered {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
+
+        .icon {
+            font-size: 4rem;
+            color: #10b981;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .fade {
+            animation: fadeIn 2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Estilos para la barra de navegación */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        /* Evitar que el contenido se superponga con la barra de navegación */
+        .spa-mode {
+            padding-top: 4rem; /* Altura aproximada de la barra de navegación */
+        }
     </style>
 </head>
 <body id="payment-body">
-    <!-- Contenido de redirección (se muestra solo cuando es página independiente) -->
-    <div id="redirect-content" class="redirect-mode">
-        <div>
-            <div class="spinner"></div>
-            <h2>Procesando pago...</h2>
-            <p>Redirigiendo a la aplicación...</p>
-        </div>
-    </div>
+    <!-- Barra de navegación idéntica a la SPA -->
+    <nav class="w-full bg-gray-900/80 border-b border-gray-800 shadow-lg mb-8 flex justify-center items-center py-3 sticky top-0 z-10" aria-label="Navegación principal">
+        <ul class="flex gap-8 text-lg font-semibold">
+            <li><a href="#" id="nav-home" class="text-white hover:text-blue-400 flex items-center gap-1"><span class="material-icons align-middle">home</span>Inicio</a></li>
+            <li><a href="#" id="nav-activity" class="text-white hover:text-green-400 flex items-center gap-1"><span class="material-icons align-middle">assignment</span>Actividad</a></li>
+            <li><a href="#" id="nav-account" class="text-white hover:text-yellow-400 flex items-center gap-1"><span class="material-icons align-middle">person</span>Cuenta</a></li>
+        </ul>
+    </nav>
 
     <!-- Contenido SPA (se muestra cuando es parte de la aplicación) -->
     <section id="payment-success-section" class="spa-mode flex items-center justify-center p-4 hidden" role="main" aria-label="Confirmación de pago">
         <article class="bg-accordion border border-gray-600 rounded-lg shadow-lg p-8 max-w-2xl w-full text-center">
             <header class="mb-6">
                 <span class="material-icons text-green-400 text-6xl mb-4 block" aria-hidden="true">check_circle</span>
-                <h1 class="text-3xl font-bold text-white mb-2">¡Pago Procesado Exitosamente!</h1>
+                <h1 class="text-3xl font-bold text-white mb-2" id="main-success-title">¡Pago Procesado Exitosamente!</h1>
                 <p class="text-gray-300">Tu reserva ha sido confirmada y pagada</p>
             </header>
 
@@ -113,40 +156,32 @@
                 this.isStandalone = this.detectMode();
                 this.urlParams = this.getUrlParams();
                 this.paymentId = this.extractPaymentId();
-                
-                console.log('PaymentSuccessController iniciado:', {
-                    isStandalone: this.isStandalone,
-                    paymentId: this.paymentId,
-                    allParams: Array.from(this.urlParams.entries())
-                });
-                
                 this.init();
             }
 
             // Extraer payment_id de diferentes fuentes
             extractPaymentId() {
-                // Intentar obtener payment_id directamente
                 let paymentId = this.urlParams.get("payment_id");
-                
                 if (!paymentId) {
-                    // Intentar desde external_reference
                     const externalRef = this.urlParams.get("external_reference");
                     if (externalRef) {
                         try {
                             const refData = JSON.parse(decodeURIComponent(externalRef));
-                            paymentId = refData.PaymentId;
+                            if (refData && refData.PaymentId) {
+                                paymentId = refData.PaymentId;
+                            }
                         } catch (e) {
-                            console.warn('Error parseando external_reference:', e);
+                            paymentId = decodeURIComponent(externalRef);
                         }
                     }
                 }
-                
-                // Si aún no tenemos paymentId, usar collection_id como fallback
                 if (!paymentId) {
                     paymentId = this.urlParams.get("collection_id");
                 }
-                
-                console.log('Payment ID extraído:', paymentId);
+                if (paymentId && !/^[\w-]+$/.test(paymentId)) {
+                    paymentId = null;
+                }
+                console.log('[PaymentSuccess] Payment ID extraído:', paymentId);
                 return paymentId;
             }
 
@@ -167,9 +202,13 @@
 
             // Detectar si estamos en modo independiente o SPA
             detectMode() {
-                // Si no hay un elemento main con contenido, estamos en modo independiente
+                if (window.location.protocol !== 'https:') {
+                    alert('Por seguridad, la página de pago debe estar en HTTPS.');
+                }
                 const mainElement = parent.document?.getElementById('main');
-                return !mainElement || mainElement.children.length === 0;
+                const isStandalone = !mainElement || mainElement.children.length === 0;
+                console.log('[PaymentSuccess] detectMode:', { isStandalone });
+                return isStandalone;
             }
 
             init() {
@@ -183,7 +222,7 @@
             // Modo redirección: redirigir a SPA
             handleRedirectMode() {
                 const redirectUrl = this.buildRedirectUrl();
-                console.log('Redirigiendo a:', redirectUrl);
+                console.log('[PaymentSuccess] Redirigiendo a:', redirectUrl);
                 window.location.replace(redirectUrl);
             }
 
@@ -193,22 +232,30 @@
                 document.getElementById('redirect-content').style.display = 'none';
                 document.getElementById('payment-success-section').classList.remove('hidden');
                 document.getElementById('payment-body').className = '';
-
+                // Mejorar visibilidad: solo mostrar spinner o detalles o error
+                document.getElementById('loading-spinner').classList.remove('hidden');
+                document.getElementById('payment-details').classList.add('hidden');
+                document.getElementById('error-message').classList.add('hidden');
+                // Foco accesible
+                setTimeout(() => {
+                    const mainTitle = document.getElementById('main-success-title');
+                    if (mainTitle) mainTitle.focus && mainTitle.focus();
+                }, 100);
                 // Inicializar verificación de pago
                 this.initPaymentVerification();
             }
 
             buildRedirectUrl() {
-                const baseUrl = window.location.origin + window.location.pathname.replace('/payment-success.html', '/index.html');
-                
+                const baseUrl = window.location.origin + '/index.html';
                 if (this.paymentId) {
-                    return `${baseUrl}#payment-success?payment_id=${this.paymentId}`;
+                    return `${baseUrl}?payment=success&payment_id=${this.paymentId}`;
                 } else {
                     const allParams = window.location.search;
                     if (allParams) {
-                        return `${baseUrl}#payment-success${allParams}`;
+                        // Reemplazar ? por & para concatenar correctamente
+                        return `${baseUrl}?payment=success${allParams.replace('?', '&')}`;
                     } else {
-                        return `${baseUrl}#payment-success`;
+                        return `${baseUrl}?payment=success`;
                     }
                 }
             }
@@ -220,7 +267,7 @@
                 const paymentInfo = document.getElementById("payment-info");
                 const errorMessage = document.getElementById("error-message");
 
-                console.log('Iniciando verificación de pago:', {
+                console.log('[PaymentSuccess] Iniciando verificación de pago:', {
                     paymentId: this.paymentId,
                     allParams: Array.from(this.urlParams.entries()),
                     windowSearch: window.location.search,
@@ -231,7 +278,7 @@
                     await this.verifyPayment(loadingSpinner, paymentDetails, paymentInfo, errorMessage);
                     this.startCountdown(countdownEl);
                 } else {
-                    console.warn('No se encontró payment_id en los parámetros');
+                    console.warn('[PaymentSuccess] No se encontró payment_id en los parámetros');
                     loadingSpinner?.classList.add("hidden");
                     errorMessage?.classList.remove("hidden");
                     const errorSpan = errorMessage?.querySelector("span:last-child");
@@ -245,31 +292,24 @@
 
             async verifyPayment(loadingSpinner, paymentDetails, paymentInfo, errorMessage) {
                 try {
-                    console.log('Verificando pago con ID:', this.paymentId);
-                    
+                    loadingSpinner?.classList.remove("hidden");
+                    paymentDetails?.classList.add("hidden");
+                    errorMessage?.classList.add("hidden");
                     const response = await fetch(`${this.BASE_URL}/payment/verify/${this.paymentId}`, {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json"
                         }
                     });
-                    
-                    console.log('Respuesta de verificación:', response.status);
-                    
                     if (!response.ok) {
                         const errorData = await response.text();
-                        console.error('Error en verificación:', errorData);
                         throw new Error(`Error al verificar el pago: ${response.status}`);
                     }
-
                     const data = await response.json();
-                    console.log('Datos de pago verificados:', data);
                     localStorage.setItem("lastPayment", JSON.stringify(data));
-
                     // Ocultar spinner y mostrar detalles
                     loadingSpinner?.classList.add("hidden");
                     paymentDetails?.classList.remove("hidden");
-
                     // Mostrar información del pago
                     if (paymentInfo) {
                         paymentInfo.innerHTML = `
@@ -281,9 +321,13 @@
                             <div><strong>Número de Transacción:</strong> ${data.transactionId || 'N/A'}</div>
                         `;
                     }
-
+                    // Intentar refrescar reservas si la SPA lo soporta
+                    if (window.refreshAccordions) {
+                        window.refreshAccordions();
+                    } else if (parent && parent.refreshAccordions) {
+                        parent.refreshAccordions();
+                    }
                 } catch (err) {
-                    console.error('Error completo en verificación:', err);
                     loadingSpinner?.classList.add("hidden");
                     errorMessage?.classList.remove("hidden");
                     const errorSpan = errorMessage?.querySelector("span:last-child");
@@ -345,6 +389,25 @@
 
         // Exportar función para compatibilidad con SPA
         window.initPaymentSuccess = () => new PaymentSuccessController();
+
+        // Redirección automática después de mostrar mensaje de éxito
+        setTimeout(() => {
+            const params = new URLSearchParams(window.location.search);
+            let extra = '';
+            if (params.has('payment_id')) extra += `&payment_id=${encodeURIComponent(params.get('payment_id'))}`;
+            if (params.has('external_reference')) extra += `&external_reference=${encodeURIComponent(params.get('external_reference'))}`;
+            window.location.href = window.location.origin + '/index.html?payment=success' + extra;
+        }, 2200);
+
+        // Barra de navegación SPA (eventos)
+        document.addEventListener('DOMContentLoaded', () => {
+            const navHome = document.getElementById('nav-home');
+            const navActivity = document.getElementById('nav-activity');
+            const navAccount = document.getElementById('nav-account');
+            if (navHome) navHome.onclick = (e) => { e.preventDefault(); window.loadPage ? window.loadPage('home') : window.location.hash = 'home'; };
+            if (navActivity) navActivity.onclick = (e) => { e.preventDefault(); window.loadPage ? window.loadPage('activity') : window.location.hash = 'activity'; };
+            if (navAccount) navAccount.onclick = (e) => { e.preventDefault(); window.loadPage ? window.loadPage('account') : window.location.hash = 'account'; };
+        });
     </script>
 </body>
 </html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Fallido - Rentify</title>
+    <link rel="icon" href="../img/rentifylogo.png" type="image/png" />
+    <link rel="stylesheet" href="../css/styles.css" />
+    <style>
+        body { background: #2d2d2d; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .center { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .icon { font-size: 5rem; color: #ef4444; }
+        .btn { margin-top: 2rem; background: #ef4444; color: #fff; padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }
+        .btn:hover { background: #dc2626; }
+        .centered { text-align: center; }
+        .fade { opacity: 0.7; }
+    </style>
+</head>
+<body>
+    <div class="center">
+        <span class="material-icons icon">error</span>
+        <h1>¡Pago Fallido!</h1>
+        <p>Tu pago no pudo ser procesado. Por favor, intenta nuevamente o contacta a soporte.</p>
+        <button class="btn" onclick="window.location.href='home.html'">Volver al inicio</button>
+    </div>
+    <div class="centered">
+        <span class="icon material-icons">cancel</span>
+        <h1>Pago fallido</h1>
+        <p class="fade">Redirigiendo a la aplicación...</p>
+    </div>
+    <script>
+        // Redirección automática después de mostrar mensaje de fallo
+        setTimeout(() => {
+            const params = new URLSearchParams(window.location.search);
+            let extra = '';
+            if (params.has('payment_id')) extra += `&payment_id=${encodeURIComponent(params.get('payment_id'))}`;
+            if (params.has('external_reference')) extra += `&external_reference=${encodeURIComponent(params.get('external_reference'))}`;
+            window.location.href = window.location.origin + '/index.html?payment=failed' + extra;
+        }, 2200);
+
+        function buildRedirectUrl() {
+            const baseUrl = window.location.origin + '/index.html';
+            const params = new URLSearchParams(window.location.search);
+            let extra = '';
+            if (params.has('payment_id')) extra += `&payment_id=${encodeURIComponent(params.get('payment_id'))}`;
+            if (params.has('external_reference')) extra += `&external_reference=${encodeURIComponent(params.get('external_reference'))}`;
+            return `${baseUrl}?payment=failed${extra}`;
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</body>
+</html>

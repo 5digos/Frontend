@@ -16,6 +16,25 @@ import { getVehicleById, getBranchOfficeById } from "./api/information.js";
 import { hideSpinner, showSpinner } from "./components/spinners.js";
 
 export async function initializeActivityPage() {
+  // Detectar si hay un pago exitoso pendiente de mostrar
+  const urlParams = new URLSearchParams(window.location.search);
+  const paymentSuccess = urlParams.get('payment') === 'success';
+  const paymentFailed = urlParams.get('payment') === 'failed';
+  const paymentPending = urlParams.get('payment') === 'pending';
+  let paymentMessageTimeout;
+
+  if (paymentSuccess) {
+    mostrarMensajePago('success');
+    // Limpiar el parámetro de la URL para evitar mostrarlo de nuevo al refrescar
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (paymentFailed) {
+    mostrarMensajePago('failed');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else if (paymentPending) {
+    mostrarMensajePago('pending');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
   try {
     showSpinner();
     await loadActiveReservation();
@@ -25,6 +44,32 @@ export async function initializeActivityPage() {
   } catch (error) {
     console.error("Error inicializando ActivityPage:", error);
     hideSpinner();
+  }
+
+  function mostrarMensajePago(tipo) {
+    let msg = document.getElementById('pago-estado-msg');
+    let color = 'bg-green-600', icon = 'check_circle', texto = '¡Pago realizado con éxito!';
+    if (tipo === 'failed') {
+      color = 'bg-red-600'; icon = 'cancel'; texto = 'El pago fue rechazado o falló.';
+    } else if (tipo === 'pending') {
+      color = 'bg-yellow-500'; icon = 'hourglass_empty'; texto = 'El pago está pendiente de confirmación.';
+    }
+    if (!msg) {
+      msg = document.createElement('div');
+      msg.id = 'pago-estado-msg';
+      msg.className = `fixed top-6 left-1/2 transform -translate-x-1/2 z-50 ${color} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`;
+      msg.innerHTML = `<span class="material-icons">${icon}</span> ${texto}`;
+      document.body.appendChild(msg);
+    } else {
+      msg.className = `fixed top-6 left-1/2 transform -translate-x-1/2 z-50 ${color} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`;
+      msg.innerHTML = `<span class=\"material-icons\">${icon}</span> ${texto}`;
+      msg.style.display = 'flex';
+    }
+    // Ocultar automáticamente después de 4 segundos
+    clearTimeout(paymentMessageTimeout);
+    paymentMessageTimeout = setTimeout(() => {
+      msg.style.display = 'none';
+    }, 4000);
   }
 }
 
@@ -276,19 +321,16 @@ async function loadActiveReservation() {
                   const paidInfo = await getReservationSummaryForPayment(resDetail.reservationId);
                   const createdPayment = await postCreatePaymentFromReservation(paidInfo);
                   const urlMp = createdPayment.checkoutUrl;
-                  // Redirigir en la misma pestaña para que MercadoPago pueda volver correctamente
+                  // IMPORTANTE: Redirigir SIEMPRE en la misma pestaña para evitar errores de sandbox de MercadoPago
                   window.location.href = urlMp;
-
+                  // No usar window.open ni iframes para MercadoPago
+              } catch (error) {
                   hideSpinner();
-                  setTimeout(() => {
-                  }, 1000);
-          } catch (error) {
-                  hideSpinner();
-                console.error("Error al pagar la reserva:", error);
-                payBtn.disabled = false;
-                payBtn.innerHTML = `<span class="material-icons">payment</span> Ir a Pagar`;
-          }
-        });
+                  console.error("Error al pagar la reserva:", error);
+                  payBtn.disabled = false;
+                  payBtn.innerHTML = `<span class="material-icons">payment</span> Ir a Pagar`;
+              }
+          });
       }
     }
   } catch (error) {
