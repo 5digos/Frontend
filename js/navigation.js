@@ -32,16 +32,6 @@ export function loadPage(page) {
       document.getElementById("main").innerHTML = html;
       updateNavActiveState(page);
 
-      // Log para depuración: mostrar los IDs importantes después de cargar el HTML
-      if (page === "activity") {
-        setTimeout(() => {
-          console.log("[Depuración] activity-section:", document.getElementById("activity-section"));
-          console.log("[Depuración] active-content:", document.getElementById("active-content"));
-          console.log("[Depuración] proxima-content:", document.getElementById("proxima-content"));
-          console.log("[Depuración] historial-content:", document.getElementById("historial-content"));
-        }, 100);
-      }
-
       if (page === "home") {
         requestAnimationFrame(() => {
           initializeMap();
@@ -81,82 +71,49 @@ export function loadPage(page) {
         });
       }
       if (page === "activity") {
-        // Solución robusta que maneja elementos faltantes
         setTimeout(() => {
-          console.log("[DEBUG] Iniciando verificación de elementos de activity...");
-          
-          const mainContainer = document.getElementById("main");
-          console.log("Main container:", mainContainer);
-          
           const activitySection = document.getElementById("activity-section");
-          console.log("Activity section encontrada:", activitySection);
           
           if (activitySection) {
-            // Buscar elementos existentes
             let activeContent = document.getElementById("active-content");
             let proximaContent = document.getElementById("proxima-content");
             let historialContent = document.getElementById("historial-content");
             
-            console.log("Elementos encontrados inicialmente:");
-            console.log("- active-content:", activeContent);
-            console.log("- proxima-content:", proximaContent);
-            console.log("- historial-content:", historialContent);
-            
-            // Si faltan elementos, crearlos dinámicamente
             if (!proximaContent) {
-              console.warn("⚠️ proxima-content no encontrado, creando dinámicamente...");
-              // Buscar el contenedor de próxima reserva
               const proximaButton = activitySection.querySelector('button[onclick="toggleAccordion(\'proxima\')"]');
               if (proximaButton && proximaButton.parentElement) {
                 proximaContent = document.createElement('div');
                 proximaContent.id = 'proxima-content';
                 proximaContent.className = 'accordion-content';
                 proximaButton.parentElement.appendChild(proximaContent);
-                console.log("✅ proxima-content creado exitosamente");
               }
             }
             
             if (!historialContent) {
-              console.warn("⚠️ historial-content no encontrado, creando dinámicamente...");
-              // Buscar el contenedor de historial
               const historialButton = activitySection.querySelector('button[onclick="toggleAccordion(\'historial\')"]');
               if (historialButton && historialButton.parentElement) {
                 historialContent = document.createElement('div');
                 historialContent.id = 'historial-content';
                 historialContent.className = 'accordion-content';
                 historialButton.parentElement.appendChild(historialContent);
-                console.log("✅ historial-content creado exitosamente");
               }
             }
             
-            // Verificar nuevamente después de crear elementos
-            activeContent = document.getElementById("active-content");
-            proximaContent = document.getElementById("proxima-content");
-            historialContent = document.getElementById("historial-content");
-            
-            console.log("Elementos finales:");
-            console.log("- active-content:", activeContent);
-            console.log("- proxima-content:", proximaContent);
-            console.log("- historial-content:", historialContent);
-            
-            if (activeContent && proximaContent && historialContent) {
-              console.log("✅ Todos los elementos verificados - Inicializando activity page");
-            } else {
-              console.log("⚠️ Algunos elementos aún faltan, pero continuando...");
-            }
-            
-            // Inicializar de todas formas
             initializeActivityPage();
             initScrollToTop({
               btnSelector: "#scrollToTopBtn",
               showAfter: 150,
               scrollDuration: 600,
             });
-            
-          } else {
-            console.error("❌ No se encontró activity-section - HTML no cargado");
           }
         }, 300);
+      }
+      if (page === "payment-success") {
+        setTimeout(() => {
+          if (typeof window.initPaymentSuccess === 'function') {
+            window.initPaymentSuccess();
+          }
+        }, 100);
       }
       const cancelBtn = document.getElementById("cancel-reservation-btn");
       if (cancelBtn) {
@@ -231,3 +188,6 @@ function updateNavActiveState(activePage) {
     activeLink.classList.add("text-white");
   }
 }
+
+// Hacer loadPage disponible globalmente para que funcione desde cualquier parte
+window.loadPage = loadPage;

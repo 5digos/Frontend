@@ -17,28 +17,13 @@ import { hideSpinner, showSpinner } from "./components/spinners.js";
 
 export async function initializeActivityPage() {
   try {
-    console.log("🚀 Iniciando inicialización de Activity Page...");
     showSpinner();
-    
-    // Verificar elementos antes de continuar
-    const activeContent = document.getElementById("active-content");
-    const proximaContent = document.getElementById("proxima-content");
-    const historialContent = document.getElementById("historial-content");
-    
-    console.log("Verificación de elementos:");
-    console.log("- active-content:", activeContent);
-    console.log("- proxima-content:", proximaContent);
-    console.log("- historial-content:", historialContent);
-    
-    // Cargar reservas (las funciones manejarán la ausencia de elementos)
     await loadActiveReservation();
     await loadProximaReserva();
     await loadReservationHistory();
-    
     hideSpinner();
-    console.log("✅ Activity Page inicializada correctamente");
   } catch (error) {
-    console.error("❌ Error inicializando ActivityPage:", error);
+    console.error("Error inicializando ActivityPage:", error);
     hideSpinner();
   }
 }
@@ -73,27 +58,21 @@ export function toggleAccordion(id, prefix = "") {
 }
 
 async function loadActiveReservation() {
-  console.log("📋 Iniciando carga de reserva activa...");
-  
   let containerActive = document.getElementById("active-content");
   if (!containerActive) {
-    console.warn("⚠️ No se encontró el contenedor active-content");
     return;
   }
-  
-  console.log("✅ Contenedor active-content encontrado:", containerActive);
   
   containerActive.classList.add("active");
   const activeArrow = document.getElementById("active-arrow");
   if (activeArrow) activeArrow.classList.add("rotated");
-  containerActive.innerHTML = ""; // Limpio el contenido anterior
+  containerActive.innerHTML = "";
   containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando reserva activa...</p>`;
 
   const p = (id) => `#active-${id}`;
 
   try {
     const { items: allReservations } = await getUserReservations();
-    console.log("[Depuración] allReservations:", allReservations);
     if (!allReservations || allReservations.length === 0) {
       containerActive.innerHTML = `<p class='p-4 text-gray-400 text-sm italic text-center'>No tienes reservas activas.</p>`;
       return;
@@ -121,10 +100,7 @@ async function loadActiveReservation() {
       getVehicleById(active.vehicleId),
     ]);
 
-    // VEHÍCULO
     containerActive.querySelector(`${p("vehicle-image")}`).src = vehicleDetail.vehicle.imageUrl;
-    //const vehicleImage = await waitForElementInContainer(containerActive, p("vehicle-image"));
-    //vehicleImage.src = vehicleDetail.vehicle.imageUrl;
 
     containerActive.querySelector(`${p("vehicle-title")} span`).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model} ${vehicleDetail.vehicle.year}`;
     containerActive.querySelector(p("vehicle-brand-model")).textContent = `${vehicleDetail.vehicle.brand} ${vehicleDetail.vehicle.model}`;
@@ -135,7 +111,6 @@ async function loadActiveReservation() {
     containerActive.querySelector(p("vehicle-transmission")).textContent =vehicleDetail.vehicle.transmissionType.name;
     containerActive.querySelector(p("vehicle-category")).textContent =vehicleDetail.vehicle.category.name;
 
-    // DOCUMENTOS
     const docsContainer = containerActive.querySelector(p("documents-container"));
     docsContainer.innerHTML = "";
     vehicleDetail.documents.forEach((doc) => {
@@ -154,7 +129,6 @@ async function loadActiveReservation() {
       btn.addEventListener("click", () => downloadDocument(doc.url, doc.docType));
     });
 
-    // SUCURSALES
     containerActive.querySelector(p("pickup-office-name")).textContent = resDetail.pickupBranchOfficeName;
     containerActive.querySelector(p("dropoff-office-name")).textContent = resDetail.dropOffBranchOfficeName;
 
@@ -175,7 +149,6 @@ async function loadActiveReservation() {
     dropoffDetails.querySelector(p("dropoff-office-phone")).textContent = dropoffInfo.phone;
     dropoffDetails.querySelector(p("dropoff-office-reference")).textContent = dropoffInfo.locationReference;
 
-    // HORARIOS
     containerActive.querySelector(p("res-date-start")).textContent = formatDate(resDetail.startTime);
     containerActive.querySelector(p("res-time-start")).textContent = formatTime(resDetail.startTime);
     containerActive.querySelector(p("res-date-end")).textContent = formatDate(resDetail.endTime);
@@ -186,7 +159,6 @@ async function loadActiveReservation() {
     containerActive.querySelector(p("res-date-real-end")).textContent = resDetail.actualReturnTime ? formatDate(resDetail.actualReturnTime) : "-";
     containerActive.querySelector(p("res-time-real-end")).textContent = resDetail.actualReturnTime ? formatTime(resDetail.actualReturnTime) : "-";
 
-    // Container Botones
     const containerButtons = containerActive.querySelector(p("buttons"));
     containerButtons.innerHTML = "";
 
@@ -209,8 +181,6 @@ async function loadActiveReservation() {
 
             const updated = await pickupReservation(resDetail.reservationId);
 
-            console.log("Simulando apertura de vehículo vía NFC");
-            // Actualizá los horarios reales
             containerActive.querySelector(
               p("res-date-real-start")
             ).textContent = formatDate(updated.actualPickupTime);
@@ -218,7 +188,6 @@ async function loadActiveReservation() {
               p("res-time-real-start")
             ).textContent = formatTime(updated.actualPickupTime);
 
-            // Desactivá el botón y cambiá su estado
             openBtn.innerHTML = `<span class="material-icons">lock_open</span> Vehículo retirado`;
             openBtn.classList.remove("bg-blue-600", "hover:bg-blue-700");
             openBtn.classList.add(
@@ -253,18 +222,15 @@ async function loadActiveReservation() {
       const returnBtn = containerButtons.querySelector("#return-vehicle-btn");
       if (returnBtn) {
         returnBtn.addEventListener("click", async () => {
-          console.log("Simulando retorno de vehículo..");
           try {
             returnBtn.disabled = true;
             returnBtn.innerHTML = `<div class="spinner w-5 h-5 border-2 border-white border-t-transparent"></div> Devolviendo...`;
 
-            //actualizar horarios reales del retorno del auto
             const updated = await returnReservation(resDetail.reservationId);
             containerActive.querySelector(p("res-date-real-end")).textContent =
               formatDate(updated.actualReturnTime);
             containerActive.querySelector(p("res-time-real-end")).textContent =
               formatTime(updated.actualReturnTime);
-            // Desactivá el botón y cambiá su estado
             returnBtn.innerHTML = `<span class="material-icons">lock_open</span> Vehículo devuelto`;
             returnBtn.classList.remove("bg-orange-600", "hover:bg-orange-700");
             returnBtn.classList.add(
@@ -307,25 +273,18 @@ async function loadActiveReservation() {
 
                   payBtn.disabled = true;
                   payBtn.innerHTML = `<div class="spinner  w-5 h-5 border-2 border-white border-t-transparent"></div> Procediendo a pagar...`;
-                  //obtengo la informacion de la reserva para el pago;
                   const paidInfo = await getReservationSummaryForPayment(resDetail.reservationId);
-                  console.log(paidInfo);
-                  //showSpinner();
-                  const createdPayment = await postCreatePaymentFromReservation(paidInfo); //creo el pago y me devuelev checkoutURL y paymentId
-                  console.log(createdPayment);
+                  const createdPayment = await postCreatePaymentFromReservation(paidInfo);
                   const urlMp = createdPayment.checkoutUrl;
-                  console.log(urlMp);
-                  window.open(urlMp, "_blank");
+                  // Redirigir en la misma pestaña para que MercadoPago pueda volver correctamente
+                  window.location.href = urlMp;
 
                   hideSpinner();
                   setTimeout(() => {
-                  //refreshReservaActiva();
-                  //refreshHistorialReservas();
-              }, 1000);
+                  }, 1000);
           } catch (error) {
                   hideSpinner();
                 console.error("Error al pagar la reserva:", error);
-                  //alert("Error al pagar la reserva: " + error.message);
                 payBtn.disabled = false;
                 payBtn.innerHTML = `<span class="material-icons">payment</span> Ir a Pagar`;
           }
@@ -338,36 +297,24 @@ async function loadActiveReservation() {
 }
 
 async function loadProximaReserva() {
-  console.log("📅 Iniciando carga de próxima reserva...");
-  
   let containerProxima = document.getElementById("proxima-content");
   if (!containerProxima) {
-    console.warn("⚠️ No se encontró el contenedor proxima-content, intentando crearlo...");
-    
-    // Buscar el botón de próxima reserva para encontrar el contenedor padre
     const proximaButton = document.querySelector('button[onclick="toggleAccordion(\'proxima\')"]');
     if (proximaButton && proximaButton.parentElement) {
       containerProxima = document.createElement('div');
       containerProxima.id = 'proxima-content';
       containerProxima.className = 'accordion-content';
       proximaButton.parentElement.appendChild(containerProxima);
-      console.log("✅ Contenedor proxima-content creado dinámicamente");
     } else {
-      console.error("❌ No se pudo crear proxima-content - botón padre no encontrado");
-      return; // evitar errores posteriores
+      return;
     }
   }
-  
-  console.log("✅ Contenedor proxima-content encontrado:", containerProxima);
   
   containerProxima.classList.add("active");
   const arrow = document.getElementById("proxima-arrow");
   if (arrow) arrow.classList.add("rotated");
-  containerProxima.innerHTML = ""; // Limpio el contenido anterior
+  containerProxima.innerHTML = "";
   containerProxima.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando próxima reserva...</p>`;
-
-  // Espera a que el DOM esté estable antes de buscar elementos
-  //await new Promise((resolve) => setTimeout(resolve, 100)); // <<== importante
 
   try {
     const { items: pendings } = await getUserReservations({
@@ -651,20 +598,15 @@ async function loadProximaReserva() {
 }
 
 async function loadReservationHistory() {
-  console.log("📜 Iniciando carga de historial de reservas...");
-  
   let containerHistorial = document.getElementById("historial-content");
   if (!containerHistorial) {
-    console.warn("⚠️ No se encontró el contenedor historial-content");
     return;
   }
-  
-  console.log("✅ Contenedor historial-content encontrado:", containerHistorial);
   
   containerHistorial.classList.add("active");
   const arrow = document.getElementById("historial-arrow");
   if (arrow) arrow.classList.add("rotated");
-  containerHistorial.innerHTML = ""; // Limpio el contenido anterior
+  containerHistorial.innerHTML = "";
   containerHistorial.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando historial de reservas...</p>`;
 
   try {
@@ -684,8 +626,6 @@ async function loadReservationHistory() {
 
     for (let i = 0; i < paidReservations.length; i++) {
       const res = paidReservations[i];
-
-      console.log(`Reserva ${i + 1}: ${res}`);
 
       const [resDetail, vehicleDetail] = await Promise.all([
         getReservationById(res.reservationId),
