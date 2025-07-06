@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Exitoso - Rentify</title>
+    <link rel="icon" href="img/rentifylogo.png" type="image/png" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+        :root {
+            --bg-accordion: oklch(26.8% 0.004 56.043);
+        }
+        
+        body {
+            background-color: var(--bg-accordion);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #10b981;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Estilos para modo redirección */
+        .redirect-mode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        
+        /* Estilos para modo SPA */
+        .spa-mode {
+            min-height: 100vh;
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body id="payment-body">
+    <!-- Contenido de redirección (se muestra solo cuando es página independiente) -->
+    <div id="redirect-content" class="redirect-mode">
+        <div>
+            <div class="spinner"></div>
+            <h2>Procesando pago...</h2>
+            <p>Redirigiendo a la aplicación...</p>
+        </div>
+    </div>
+
+    <!-- Contenido SPA (se muestra cuando es parte de la aplicación) -->
+    <section id="payment-success-section" class="spa-mode flex items-center justify-center p-4 hidden" role="main" aria-label="Confirmación de pago">
+        <article class="bg-accordion border border-gray-600 rounded-lg shadow-lg p-8 max-w-2xl w-full text-center">
+            <header class="mb-6">
+                <span class="material-icons text-green-400 text-6xl mb-4 block" aria-hidden="true">check_circle</span>
+                <h1 class="text-3xl font-bold text-white mb-2">¡Pago Procesado Exitosamente!</h1>
+                <p class="text-gray-300">Tu reserva ha sido confirmada y pagada</p>
+            </header>
+
+            <div id="payment-status" class="mb-6">
+                <div id="loading-spinner" class="flex flex-col items-center">
+                    <div class="spinner w-8 h-8 border-4 border-gray-300 border-t-green-500 rounded-full animate-spin mb-3"></div>
+                    <p class="text-gray-300">Verificando detalles del pago...</p>
+                </div>
+                
+                <div id="payment-details" class="hidden bg-gray-800/50 rounded-lg p-4 text-left">
+                    <h2 class="text-lg font-semibold text-green-400 mb-3">Detalles del Pago</h2>
+                    <div id="payment-info" class="space-y-2 text-sm text-gray-300"></div>
+                </div>
+                
+                <div id="error-message" class="hidden text-red-400">
+                    <span class="material-icons mr-2" aria-hidden="true">error</span>
+                    <span>Error al verificar el pago. Por favor, contacta con soporte.</span>
+                </div>
+            </div>
+
+            <footer class="space-y-4">
+                <div id="redirect-info" class="text-sm text-gray-400">
+                    <p id="countdown-text">Serás redirigido automáticamente en <span id="countdown" class="font-bold text-white">15</span> segundos</p>
+                </div>
+                
+                <div class="flex gap-3 justify-center">
+                    <button id="go-to-activity" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2">
+                        <span class="material-icons" aria-hidden="true">assignment</span>
+                        Ir a Mis Reservas
+                    </button>
+                    <button id="go-to-home" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors flex items-center gap-2">
+                        <span class="material-icons" aria-hidden="true">home</span>
+                        Ir al Inicio
+                    </button>
+                </div>
+            </footer>
+        </article>
+    </section>
+
+    <script>
+        class PaymentSuccessController {
+            constructor() {
+                this.BASE_URL = "https://localhost:7059/api";
+                this.isStandalone = this.detectMode();
+                this.urlParams = this.getUrlParams();
+                this.paymentId = this.extractPaymentId();
+                
+                console.log('PaymentSuccessController iniciado:', {
+                    isStandalone: this.isStandalone,
+                    paymentId: this.paymentId,
+                    allParams: Array.from(this.urlParams.entries())
+                });
+                
+                this.init();
+            }
+
+            // Extraer payment_id de diferentes fuentes
+            extractPaymentId() {
+                // Intentar obtener payment_id directamente
+                let paymentId = this.urlParams.get("payment_id");
+                
+                if (!paymentId) {
+                    // Intentar desde external_reference
+                    const externalRef = this.urlParams.get("external_reference");
+                    if (externalRef) {
+                        try {
+                            const refData = JSON.parse(decodeURIComponent(externalRef));
+                            paymentId = refData.PaymentId;
+                        } catch (e) {
+                            console.warn('Error parseando external_reference:', e);
+                        }
+                    }
+                }
+                
+                // Si aún no tenemos paymentId, usar collection_id como fallback
+                if (!paymentId) {
+                    paymentId = this.urlParams.get("collection_id");
+                }
+                
+                console.log('Payment ID extraído:', paymentId);
+                return paymentId;
+            }
+
+            // Obtener parámetros tanto de URL como de hash
+            getUrlParams() {
+                let searchString = window.location.search;
+                
+                // Si no hay parámetros en search, buscar en hash
+                if (!searchString && window.location.hash.includes('?')) {
+                    const hashParts = window.location.hash.split('?');
+                    if (hashParts.length > 1) {
+                        searchString = '?' + hashParts[1];
+                    }
+                }
+                
+                return new URLSearchParams(searchString);
+            }
+
+            // Detectar si estamos en modo independiente o SPA
+            detectMode() {
+                // Si no hay un elemento main con contenido, estamos en modo independiente
+                const mainElement = parent.document?.getElementById('main');
+                return !mainElement || mainElement.children.length === 0;
+            }
+
+            init() {
+                // Si tenemos un payment_id en la URL, siempre procesar el pago directamente
+                // sin importar si es standalone o SPA
+                if (this.paymentId) {
+                    this.handlePaymentVerification();
+                } else if (this.isStandalone) {
+                    this.handleRedirectMode();
+                } else {
+                    this.handleSPAMode();
+                }
+            }
+
+            // Nuevo método para manejar verificación de pago directamente
+            handlePaymentVerification() {
+                console.log('Procesando pago directamente con payment_id:', this.paymentId);
+                
+                // Ocultar contenido de redirección y mostrar SPA
+                document.getElementById('redirect-content').style.display = 'none';
+                document.getElementById('payment-success-section').classList.remove('hidden');
+                document.getElementById('payment-body').className = '';
+
+                // Inicializar verificación de pago
+                this.initPaymentVerification();
+            }
+
+            // Modo redirección: redirigir a SPA
+            handleRedirectMode() {
+                const redirectUrl = this.buildRedirectUrl();
+                console.log('Redirigiendo a:', redirectUrl);
+                window.location.replace(redirectUrl);
+            }
+
+            // Modo SPA: mostrar interfaz de verificación
+            handleSPAMode() {
+                // Ocultar contenido de redirección y mostrar SPA
+                document.getElementById('redirect-content').style.display = 'none';
+                document.getElementById('payment-success-section').classList.remove('hidden');
+                document.getElementById('payment-body').className = '';
+
+                // Inicializar verificación de pago
+                this.initPaymentVerification();
+            }
+
+            buildRedirectUrl() {
+                const baseUrl = window.location.origin + window.location.pathname.replace('/payment-success.html', '/index.html');
+                
+                if (this.paymentId) {
+                    return `${baseUrl}#payment-success?payment_id=${this.paymentId}`;
+                } else {
+                    const allParams = window.location.search;
+                    if (allParams) {
+                        return `${baseUrl}#payment-success${allParams}`;
+                    } else {
+                        return `${baseUrl}#payment-success`;
+                    }
+                }
+            }
+
+            async initPaymentVerification() {
+                const countdownEl = document.getElementById("countdown");
+                const loadingSpinner = document.getElementById("loading-spinner");
+                const paymentDetails = document.getElementById("payment-details");
+                const paymentInfo = document.getElementById("payment-info");
+                const errorMessage = document.getElementById("error-message");
+
+                console.log('Iniciando verificación de pago:', {
+                    paymentId: this.paymentId,
+                    allParams: Array.from(this.urlParams.entries()),
+                    windowSearch: window.location.search,
+                    windowHash: window.location.hash
+                });
+
+                if (this.paymentId) {
+                    await this.verifyPayment(loadingSpinner, paymentDetails, paymentInfo, errorMessage);
+                    this.startCountdown(countdownEl);
+                } else {
+                    console.warn('No se encontró payment_id en los parámetros');
+                    loadingSpinner?.classList.add("hidden");
+                    errorMessage?.classList.remove("hidden");
+                    const errorSpan = errorMessage?.querySelector("span:last-child");
+                    if (errorSpan) {
+                        errorSpan.textContent = `No se encontró un ID de pago válido. Parámetros recibidos: ${window.location.search || window.location.hash}`;
+                    }
+                }
+
+                this.setupEventListeners();
+            }
+
+            async verifyPayment(loadingSpinner, paymentDetails, paymentInfo, errorMessage) {
+                try {
+                    console.log('Verificando pago con ID de transacción MercadoPago:', this.paymentId);
+                    
+                    // Llamada POST al endpoint correcto del backend
+                    const response = await fetch(`${this.BASE_URL}/Payment/verify/${this.paymentId}`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    });
+                    
+                    console.log('Respuesta de verificación:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.text();
+                        console.error('Error en verificación:', errorData);
+                        throw new Error(`Error al verificar el pago: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('Datos de pago verificados:', data);
+                    localStorage.setItem("lastPayment", JSON.stringify(data));
+
+                    // Notificar a la pestaña principal si estamos en una nueva pestaña
+                    if (window.opener && !window.opener.closed) {
+                        console.log('Notificando a la pestaña principal via postMessage');
+                        try {
+                            window.opener.postMessage({
+                                type: 'PAYMENT_COMPLETED',
+                                paymentId: data.paymentId || this.paymentId,
+                                transactionId: this.paymentId
+                            }, '*');
+                        } catch (e) {
+                            console.error('Error enviando postMessage:', e);
+                        }
+                    }
+                    
+                    // También usar localStorage como fallback
+                    localStorage.setItem('completedPayment', JSON.stringify({
+                        paymentId: data.paymentId || this.paymentId,
+                        transactionId: this.paymentId,
+                        status: 'completed',
+                        timestamp: Date.now()
+                    }));
+
+                    // Ocultar spinner y mostrar detalles
+                    loadingSpinner?.classList.add("hidden");
+                    paymentDetails?.classList.remove("hidden");
+
+                    // Mostrar información del pago basada en la respuesta del backend
+                    if (paymentInfo) {
+                        paymentInfo.innerHTML = `
+                            <div class="text-green-400 font-semibold mb-2">✅ Pago confirmado exitosamente</div>
+                            <div><strong>ID Transacción MercadoPago:</strong> ${this.paymentId}</div>
+                            <div><strong>Estado:</strong> ${data.estado || data.status || 'Aprobado'}</div>
+                            <div><strong>Monto:</strong> $${Number(data.monto || data.amount || 0).toLocaleString()}</div>
+                            ${data.reservaId || data.reservationId ? `<div><strong>ID Reserva:</strong> ${data.reservaId || data.reservationId}</div>` : ''}
+                            ${data.paymentId ? `<div><strong>ID Pago:</strong> ${data.paymentId}</div>` : ''}
+                            ${data.mensaje || data.message ? `<div><strong>Mensaje:</strong> ${data.mensaje || data.message}</div>` : ''}
+                        `;
+                    }
+
+                } catch (err) {
+                    console.error('Error completo en verificación:', err);
+                    loadingSpinner?.classList.add("hidden");
+                    errorMessage?.classList.remove("hidden");
+                    const errorSpan = errorMessage?.querySelector("span:last-child");
+                    if (errorSpan) {
+                        errorSpan.textContent = `Error al verificar el pago: ${err.message}. Por favor, contacta con soporte.`;
+                    }
+                }
+            }
+
+            startCountdown(countdownEl) {
+                let counter = 15; // Aumentamos a 15 segundos para dar tiempo a leer
+                
+                // Ajustar mensaje según el contexto
+                const countdownText = document.getElementById('countdown-text');
+                if (this.isStandalone && window.opener) {
+                    countdownText.innerHTML = 'Esta pestaña se cerrará automáticamente en <span id="countdown" class="font-bold text-white">15</span> segundos';
+                }
+                
+                const timer = setInterval(() => {
+                    counter--;
+                    if (countdownEl) {
+                        countdownEl.textContent = counter;
+                    }
+                    if (counter <= 0) {
+                        clearInterval(timer);
+                        // Si estamos en una nueva pestaña, cerrarla en lugar de navegar
+                        if (this.isStandalone && window.opener) {
+                            window.close();
+                        } else {
+                            this.navigateToActivity();
+                        }
+                    }
+                }, 1000);
+            }
+
+            setupEventListeners() {
+                const activityBtn = document.getElementById("go-to-activity");
+                const homeBtn = document.getElementById("go-to-home");
+
+                activityBtn?.addEventListener("click", () => this.navigateToActivity());
+                homeBtn?.addEventListener("click", () => this.navigateToHome());
+            }
+
+            navigateToActivity() {
+                // Si estamos en una nueva pestaña (abierta por MercadoPago)
+                if (window.opener && !window.opener.closed) {
+                    console.log('Navegando desde nueva pestaña - cerrando y notificando');
+                    
+                    // Notificar a la pestaña principal
+                    try {
+                        window.opener.postMessage({
+                            type: 'PAYMENT_COMPLETED',
+                            paymentId: this.paymentId,
+                            action: 'navigate_to_activity'
+                        }, '*');
+                        
+                        // Mostrar mensaje de cierre
+                        document.body.innerHTML = `
+                            <div style="text-align: center; padding: 2rem; background: var(--bg-accordion); color: white; height: 100vh; display: flex; flex-direction: column; justify-content: center;">
+                                <span class="material-icons" style="font-size: 4rem; color: #10b981; margin-bottom: 1rem;">check_circle</span>
+                                <h2>¡Pago completado exitosamente!</h2>
+                                <p>Volviendo a la aplicación principal...</p>
+                                <button onclick="window.close()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #10b981; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">
+                                    Cerrar pestaña
+                                </button>
+                            </div>
+                        `;
+                        
+                        // Intentar cerrar la pestaña después de 3 segundos
+                        setTimeout(() => {
+                            window.close();
+                        }, 3000);
+                        
+                    } catch (e) {
+                        console.error('Error comunicándose con la pestaña principal:', e);
+                    }
+                } else {
+                    // Estamos en la misma pestaña o es SPA
+                    if (typeof window.loadPage === 'function') {
+                        window.loadPage('activity');
+                    } else if (typeof parent.loadPage === 'function') {
+                        parent.loadPage('activity');
+                    } else {
+                        // Fallback: redirigir a la aplicación principal
+                        const baseUrl = window.location.origin + window.location.pathname.replace('/payment-success.html', '/index.html');
+                        window.location.href = `${baseUrl}#activity`;
+                    }
+                }
+            }
+
+            navigateToHome() {
+                // Si estamos en una nueva pestaña (abierta por MercadoPago)
+                if (window.opener && !window.opener.closed) {
+                    console.log('Navegando a home desde nueva pestaña - cerrando');
+                    
+                    try {
+                        window.opener.postMessage({
+                            type: 'PAYMENT_COMPLETED',
+                            paymentId: this.paymentId,
+                            action: 'navigate_to_home'
+                        }, '*');
+                        
+                        window.close();
+                    } catch (e) {
+                        console.error('Error comunicándose con la pestaña principal:', e);
+                    }
+                } else if (typeof window.loadPage === 'function') {
+                    window.loadPage('home');
+                } else if (typeof parent.loadPage === 'function') {
+                    parent.loadPage('home');
+                } else {
+                    window.location.hash = 'home';
+                }
+            }
+        }
+
+        // Inicializar cuando se carga la página
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => new PaymentSuccessController());
+        } else {
+            new PaymentSuccessController();
+        }
+
+        // Exportar función para compatibilidad con SPA
+        window.initPaymentSuccess = () => new PaymentSuccessController();
+    </script>
+</body>
+</html>
