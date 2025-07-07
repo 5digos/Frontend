@@ -215,6 +215,8 @@ export function reservaTemplateHistorial(prefix = "") {
           </div>
         </div>
       </div>
+      
+      <!-- Datos del Pago -->
       <div class="bg-accordion border border-gray-600 rounded-lg shadow-sm">
         <button onclick="toggleAccordion('paid', '${prefix}')" class="w-full p-4 flex items-center justify-between rounded-t-lg accordion-hover">
             <div class="flex items-center gap-3">
@@ -227,7 +229,48 @@ export function reservaTemplateHistorial(prefix = "") {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
         </button>
-        <div id="${p("paid-content")}" class="accordion-content"></div>
+        <div id="${p("paid-content")}" class="accordion-content">
+          <div class="px-4 pb-4 space-y-4">
+            <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="material-icons text-yellow-400 text-lg">payment</span>
+                <span class="text-sm text-yellow-400 font-medium">Información de Pago</span>
+              </div>
+              <div class="space-y-3">
+                <div class="grid grid-cols-1 gap-3">
+                  <div>
+                    <span class="text-sm text-gray-400">ID del Pago</span>
+                    <p id="${p("payment-id")}" class="font-mono text-white text-sm break-all">-</p>
+                  </div>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <span class="text-sm text-gray-400">Fecha</span>
+                      <p id="${p("payment-date")}" class="font-medium text-white">-</p>
+                    </div>
+                    <div>
+                      <span class="text-sm text-gray-400">Hora</span>
+                      <p id="${p("payment-time")}" class="font-medium text-white">-</p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <span class="text-sm text-gray-400">Monto Total</span>
+                      <p id="${p("payment-amount")}" class="font-bold text-green-400">-</p>
+                    </div>
+                    <div>
+                      <span class="text-sm text-gray-400">Método de Pago</span>
+                      <p id="${p("payment-method")}" class="font-medium text-white">-</p>
+                    </div>
+                  </div>
+                  <div id="${p("payment-status-container")}" class="hidden">
+                    <span class="text-sm text-gray-400">Estado</span>
+                    <p id="${p("payment-status")}" class="font-medium">-</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
        </div>
       </div>
     </div>

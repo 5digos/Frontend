@@ -1,4 +1,4 @@
-﻿import { reservaTemplate } from "./components/reservaTemplate.js";
+﻿﻿import { reservaTemplate } from "./components/reservaTemplate.js";
 import { reservaTemplateProxima } from "./components/reservaTemplateProxima.js";
 import { reservaTemplateHistorial } from "./components/reservaTemplateHistorial.js";
 import {
@@ -16,62 +16,104 @@ import { getVehicleById, getBranchOfficeById } from "./api/information.js";
 import { hideSpinner, showSpinner } from "./components/spinners.js";
 
 export async function initializeActivityPage() {
-  // Detectar si hay un pago exitoso pendiente de mostrar
-  const urlParams = new URLSearchParams(window.location.search);
-  const paymentSuccess = urlParams.get('payment') === 'success';
-  const paymentFailed = urlParams.get('payment') === 'failed';
-  const paymentPending = urlParams.get('payment') === 'pending';
-  let paymentMessageTimeout;
-
-  if (paymentSuccess) {
-    mostrarMensajePago('success');
-    // Limpiar el parámetro de la URL para evitar mostrarlo de nuevo al refrescar
-    window.history.replaceState({}, document.title, window.location.pathname);
-  } else if (paymentFailed) {
-    mostrarMensajePago('failed');
-    window.history.replaceState({}, document.title, window.location.pathname);
-  } else if (paymentPending) {
-    mostrarMensajePago('pending');
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-
   try {
     showSpinner();
     await loadActiveReservation();
     await loadProximaReserva();
     await loadReservationHistory();
     hideSpinner();
+    
+    // Configurar listener para mensajes entre pestañas
+    setupCrossTabListener();
   } catch (error) {
     console.error("Error inicializando ActivityPage:", error);
     hideSpinner();
   }
-
-  function mostrarMensajePago(tipo) {
-    let msg = document.getElementById('pago-estado-msg');
-    let color = 'bg-green-600', icon = 'check_circle', texto = '¡Pago realizado con éxito!';
-    if (tipo === 'failed') {
-      color = 'bg-red-600'; icon = 'cancel'; texto = 'El pago fue rechazado o falló.';
-    } else if (tipo === 'pending') {
-      color = 'bg-yellow-500'; icon = 'hourglass_empty'; texto = 'El pago está pendiente de confirmación.';
-    }
-    if (!msg) {
-      msg = document.createElement('div');
-      msg.id = 'pago-estado-msg';
-      msg.className = `fixed top-6 left-1/2 transform -translate-x-1/2 z-50 ${color} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`;
-      msg.innerHTML = `<span class="material-icons">${icon}</span> ${texto}`;
-      document.body.appendChild(msg);
-    } else {
-      msg.className = `fixed top-6 left-1/2 transform -translate-x-1/2 z-50 ${color} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in`;
-      msg.innerHTML = `<span class=\"material-icons\">${icon}</span> ${texto}`;
-      msg.style.display = 'flex';
-    }
-    // Ocultar automáticamente después de 4 segundos
-    clearTimeout(paymentMessageTimeout);
-    paymentMessageTimeout = setTimeout(() => {
-      msg.style.display = 'none';
-    }, 4000);
-  }
 }
+
+// Función para configurar listener de comunicación entre pestañas
+function setupCrossTabListener() {
+    // Listener para postMessage desde la pestaña de pago
+    window.addEventListener('message', (event) => {
+        console.log('Mensaje recibido:', event.data);
+        
+        if (event.data && event.data.type === 'PAYMENT_COMPLETED') {
+            console.log('¡Pago completado detectado via postMessage!');
+            
+            // Guardar en localStorage para que lo detecte setupPaymentListener
+            localStorage.setItem('completedPayment', JSON.stringify({
+                paymentId: event.data.paymentId,
+                transactionId: event.data.transactionId,
+                status: 'completed',
+                timestamp: Date.now()
+            }));
+            
+            // Mostrar notificación al usuario
+            showPaymentCompletedNotification();
+            
+            // Manejar las diferentes acciones
+            if (event.data.action === 'navigate_to_activity') {
+                setTimeout(() => {
+                    if (typeof window.loadPage === 'function') {
+                        window.loadPage('activity');
+                    } else {
+                        window.location.hash = 'activity';
+                    }
+                }, 1000);
+            } else if (event.data.action === 'navigate_to_home') {
+                setTimeout(() => {
+                    if (typeof window.loadPage === 'function') {
+                        window.loadPage('home');
+                    } else {
+                        window.location.hash = 'home';
+                    }
+                }, 1000);
+            }
+        }
+    });
+    
+    // También escuchar cambios en localStorage (fallback)
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'completedPayment' && event.newValue) {
+            console.log('Pago completado detectado via storage:', event.newValue);
+            showPaymentCompletedNotification();
+        }
+    });
+}
+
+// Función para mostrar notificación de pago completado
+function showPaymentCompletedNotification() {
+    // Crear notificación temporal
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #10b981;
+        color: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 9999;
+        font-weight: 600;
+    `;
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span class="material-icons">check_circle</span>
+            ¡Pago completado exitosamente!
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Remover después de 5 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+}
+
 
 // helpers reutilizados
 function formatDate(dateString) {
@@ -315,22 +357,93 @@ async function loadActiveReservation() {
           payBtn.addEventListener("click", async () =>  {
               try
               {
-
                   payBtn.disabled = true;
                   payBtn.innerHTML = `<div class="spinner  w-5 h-5 border-2 border-white border-t-transparent"></div> Procediendo a pagar...`;
+                  
                   const paidInfo = await getReservationSummaryForPayment(resDetail.reservationId);
                   const createdPayment = await postCreatePaymentFromReservation(paidInfo);
                   const urlMp = createdPayment.checkoutUrl;
-                  // IMPORTANTE: Redirigir SIEMPRE en la misma pestaña para evitar errores de sandbox de MercadoPago
-                  window.location.href = urlMp;
-                  // No usar window.open ni iframes para MercadoPago
-              } catch (error) {
+                  
+                  // Guardar información del pago para sincronización entre pestañas
+                  localStorage.setItem('pendingPayment', JSON.stringify({
+                      paymentId: createdPayment.paymentId,
+                      reservationId: resDetail.reservationId,
+                      timestamp: Date.now()
+                  }));
+                  
+                  // Abrir MercadoPago en nueva pestaña
+                  const mpWindow = window.open(urlMp, '_blank', 'noopener,noreferrer');
+                  
+                  // Mostrar mensaje al usuario
+                  payBtn.innerHTML = `<span class="material-icons">open_in_new</span> Pago abierto en nueva pestaña`;
+                  
+                  // Configurar listener para detectar cuando se complete el pago
+                  setupPaymentListener(createdPayment.paymentId, payBtn);
+
                   hideSpinner();
-                  console.error("Error al pagar la reserva:", error);
-                  payBtn.disabled = false;
-                  payBtn.innerHTML = `<span class="material-icons">payment</span> Ir a Pagar`;
+          } catch (error) {
+                  hideSpinner();
+                console.error("Error al pagar la reserva:", error);
+                payBtn.disabled = false;
+                payBtn.innerHTML = `<span class="material-icons">payment</span> Ir a Pagar`;
+          }
+        });
+      }
+      
+      // Función para escuchar el completado del pago
+      function setupPaymentListener(paymentId, payBtn) {
+          console.log('Configurando listener para payment ID:', paymentId);
+          
+          const checkPaymentStatus = () => {
+              const completedPayment = localStorage.getItem('completedPayment');
+              console.log('Verificando completedPayment:', completedPayment);
+              
+              if (completedPayment) {
+                  const paymentData = JSON.parse(completedPayment);
+                  console.log('Payment data encontrado:', paymentData);
+                  
+                  if (paymentData.paymentId === paymentId) {
+                      console.log('¡Pago completado detectado!');
+                      // Pago completado, limpiar storage y recargar la página
+                      localStorage.removeItem('completedPayment');
+                      localStorage.removeItem('pendingPayment');
+                      
+                      // Mostrar mensaje de éxito
+                      payBtn.innerHTML = `<span class="material-icons">check_circle</span> ¡Pago completado!`;
+                      payBtn.style.backgroundColor = '#10b981';
+                      
+                      // Recargar la página después de 2 segundos para mostrar el estado actualizado
+                      setTimeout(() => {
+                          console.log('Recargando página...');
+                          window.location.reload();
+                      }, 2000);
+                      
+                      return;
+                  }
               }
-          });
+              
+              // Verificar si han pasado más de 30 minutos (tiempo límite)
+              const pendingPayment = localStorage.getItem('pendingPayment');
+              if (pendingPayment) {
+                  const paymentData = JSON.parse(pendingPayment);
+                  const thirtyMinutes = 30 * 60 * 1000;
+                  if (Date.now() - paymentData.timestamp > thirtyMinutes) {
+                      console.log('Timeout de 30 minutos alcanzado');
+                      // Limpiar y restablecer botón
+                      localStorage.removeItem('pendingPayment');
+                      payBtn.disabled = false;
+                      payBtn.innerHTML = `<span class="material-icons">payment</span> Ir a Pagar`;
+                      payBtn.style.backgroundColor = '';
+                      return;
+                  }
+              }
+              
+              // Continuar verificando cada 3 segundos
+              setTimeout(checkPaymentStatus, 3000);
+          };
+          
+          // Empezar a verificar después de 5 segundos
+          setTimeout(checkPaymentStatus, 5000);
       }
     }
   } catch (error) {
@@ -639,12 +752,63 @@ async function loadProximaReserva() {
   }
 }
 
+// Función para asegurar que el elemento historial existe
+function ensureHistorialElement() {
+  let historialContent = document.getElementById("historial-content");
+  
+  if (!historialContent) {
+    // Buscar el contenedor principal de la sección activity
+    const activitySection = document.getElementById("activity-section");
+    if (!activitySection) {
+      return null;
+    }
+    
+    // Crear el artículo del historial manualmente
+    const historialArticle = document.createElement("article");
+    historialArticle.className = "bg-accordion border border-gray-600 rounded-lg shadow-lg mb-6";
+    historialArticle.setAttribute("aria-labelledby", "historial-title");
+    
+    historialArticle.innerHTML = `
+      <header>
+        <button onclick="toggleAccordion('historial')" 
+                class="w-full p-4 flex items-center justify-between rounded-t-lg accordion-hover"
+                aria-expanded="false" 
+                aria-controls="historial-content"
+                id="historial-button">
+          <div class="flex-1 flex justify-center items-center gap-3">
+            <span class="material-icons text-purple-400 text-xl" aria-hidden="true">history</span>
+            <h2 id="historial-title" class="font-semibold text-white">Historial de Reservas</h2>
+          </div>
+          <svg id="historial-arrow" class="w-5 h-5 text-gray-400 accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
+      </header>
+      <div id="historial-content" class="accordion-content" role="region" aria-labelledby="historial-title"></div>
+    `;
+    
+    // Insertarlo después del artículo de "Próxima Reserva"
+    const proximaArticle = document.querySelector('article[aria-labelledby="proxima-title"]');
+    if (proximaArticle && proximaArticle.parentNode) {
+      proximaArticle.parentNode.insertBefore(historialArticle, proximaArticle.nextSibling);
+      
+      // Obtener el nuevo elemento creado
+      historialContent = document.getElementById("historial-content");
+    }
+  }
+  
+  return historialContent;
+}
+
 async function loadReservationHistory() {
-  let containerHistorial = document.getElementById("historial-content");
+  // Usar la función para asegurar que el elemento existe
+  let containerHistorial = ensureHistorialElement();
+  
   if (!containerHistorial) {
     return;
   }
   
+  console.log("✅ Contenedor historial encontrado");
   containerHistorial.classList.add("active");
   const arrow = document.getElementById("historial-arrow");
   if (arrow) arrow.classList.add("rotated");
@@ -654,20 +818,32 @@ async function loadReservationHistory() {
   try {
     const { items: paidReservations } = await getUserReservations({
       status: "Paid",
-    }); //voy a setearlo a Pending para probar
+    });
 
-    if (!paidReservations || paidReservations.length === 0) {
-      containerHistorial.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas previas pagadas.</p>`;
+    // DEBUG: También obtener todas las reservas para ver qué tienes disponible
+    const { items: allReservations } = await getUserReservations();
+    
+    if (allReservations && allReservations.length > 0) {
+      const statusCounts = {};
+      allReservations.forEach(r => {
+        statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
+      });
+    }
+
+    // TEMPORAL: Para debug, usar todas las reservas que no sean Pending, Confirmed, InProgress
+    const historialReservations = allReservations?.filter(r => 
+      !["Pending", "Confirmed", "InProgress"].includes(r.status)
+    ) || [];
+
+    if (!historialReservations || historialReservations.length === 0) {
+      containerHistorial.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas previas completadas.</p>`;
       return;
     }
+    
     containerHistorial.innerHTML = "";
-    // Filtrar solo las que tienen actualReturnTime definido y ordenar por fecha de devolución real (más reciente primero)
-    //const sorted = paidReservations
-    //.filter(r => r.actualReturnTime)
-    //.sort((a, b) => new Date(b.actualReturnTime) - new Date(a.actualReturnTime));
 
-    for (let i = 0; i < paidReservations.length; i++) {
-      const res = paidReservations[i];
+    for (let i = 0; i < historialReservations.length; i++) {
+      const res = historialReservations[i];
 
       const [resDetail, vehicleDetail] = await Promise.all([
         getReservationById(res.reservationId),
@@ -678,9 +854,6 @@ async function loadReservationHistory() {
 
       // DEBUG EXPRESS: evitar duplicación de cards
       if (document.getElementById(`${prefix}-wrapper`)) {
-        console.warn(
-          `Ya existe una card para ${res.reservationId}, se evita duplicación`
-        );
         continue;
       }
       const wrapper = document.createElement("div");
@@ -816,35 +989,51 @@ async function loadReservationHistory() {
           ? formatTime(resDetail.actualReturnTime)
           : "-";
 
-      
-      //wrapper.querySelector(
-      //  `#${p("paid-content")}`
-        //).innerHTML = `<p class="p-4 text-red-400 text-sm italic text-center">Todavía no hay información de pago.</p>`;
-
         const paymentInfo = await getPaymentByReservationId(resDetail.reservationId);
 
         if (paymentInfo) {
-            const paidContainer = wrapper.querySelector(`#${p("paid-content")}`);
-            paidContainer.innerHTML = `
-    <div class="p-4 bg-accordion text-white border border-gray-400 rounded-lg shadow-lg mb-4">
-      <!-- <h2 class="text-lg font-bold mb-2 text-green-400">Detalles del Pago</h2> -->
-      <p><strong>ID del Pago:</strong> ${paymentInfo.paymentId}</p>
-      <p><strong>Fecha:</strong> ${formatDate(paymentInfo.date)} a las ${formatTime(paymentInfo.date)}</p>
-      <p><strong>Monto total:</strong> $${Number(paymentInfo.amount).toLocaleString()}</p>
-      <p><strong>Método de Pago:</strong> ${paymentInfo.paymentMethodName}</p>
-    </div>
-  `;
+            // Poblar los campos específicos del nuevo template
+            wrapper.querySelector(`#${p("payment-id")}`).textContent = paymentInfo.paymentId;
+            wrapper.querySelector(`#${p("payment-date")}`).textContent = formatDate(paymentInfo.date);
+            wrapper.querySelector(`#${p("payment-time")}`).textContent = formatTime(paymentInfo.date);
+            wrapper.querySelector(`#${p("payment-amount")}`).textContent = `$${Number(paymentInfo.amount).toLocaleString()}`;
+            wrapper.querySelector(`#${p("payment-method")}`).textContent = paymentInfo.paymentMethodName;
+            
+            // Mostrar estado si está disponible
+            if (paymentInfo.status) {
+              const statusContainer = wrapper.querySelector(`#${p("payment-status-container")}`);
+              const statusElement = wrapper.querySelector(`#${p("payment-status")}`);
+              statusContainer.classList.remove('hidden');
+              statusElement.textContent = paymentInfo.status;
+              
+              // Aplicar colores según el estado
+              if (paymentInfo.status === 'approved' || paymentInfo.status === 'Paid') {
+                statusElement.className = 'font-medium text-green-400';
+              } else if (paymentInfo.status === 'pending') {
+                statusElement.className = 'font-medium text-yellow-400';
+              } else if (paymentInfo.status === 'rejected' || paymentInfo.status === 'cancelled') {
+                statusElement.className = 'font-medium text-red-400';
+              } else {
+                statusElement.className = 'font-medium text-gray-400';
+              }
+            }
         } else {
-            // Esto es opcional, podrías no mostrar nada si no hay pago
-            wrapper.querySelector(`#${p("paid-content")}`).innerHTML = `
-    <p class="p-4 text-gray-400 text-sm italic text-center">No se encontró información de pago asociada.</p>
-  `;
+            // Si no hay información de pago, mostrar mensaje amigable
+            const paidContentContainer = wrapper.querySelector(`#${p("paid-content")}`);
+            paidContentContainer.innerHTML = `
+              <div class="px-4 pb-4">
+                <p class="p-4 text-gray-400 text-sm italic text-center bg-gray-800/30 rounded-lg border border-gray-600">
+                  No se encontró información de pago asociada a esta reserva.
+                </p>
+              </div>
+            `;
         }
 
     }
+    
   } catch (error) {
-    console.error("Error al cargar historial de reservas:", error);
-    containerHistorial.innerHTML = `<p class="p-4 text-red-400 text-sm italic text-center">Hubo un error al cargar el historial.</p>`;
+    console.error("❌ Error al cargar historial de reservas:", error);
+    containerHistorial.innerHTML = `<p class="p-4 text-red-400 text-sm italic text-center">Hubo un error al cargar el historial: ${error.message}</p>`;
   }
 }
 
