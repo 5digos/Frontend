@@ -486,16 +486,16 @@ export async function reservarVehiculo(vehicleId) {
       modal = document.createElement("div");
       modal.id = "modal-reservar-vehiculo";
       modal.innerHTML = `
-          <div class="modal-overlay" style="position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;">
-            <div class="modal-content" style="background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);">
-              <h2 style="font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:var(--color-red-500,#e53935);">¿Proceder a crear una nueva reserva?</h2>
-              <div style="display:flex;gap:1rem;justify-content:center;">
-                <button id="modal-reservar-si" class="btn-confirmar text-white font-semibold px-6 py-2 text-sm rounded-lg">Sí</button>
-                <button id="modal-reservar-no" class="btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg">No</button>
-              </div>
+        <div class=\"modal-overlay\" style=\"position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;\">
+          <div class=\"modal-content\" style=\"background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);\">
+            <h2 style=\"font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:#fff;\">¿ a crear una nueva reserva?</h2>
+            <div style=\"display:flex;gap:1rem;justify-content:center;\">
+              <button id=\"modal-reservar-no\" class=\"btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg modal-btn\" style=\"min-width:110px;\">No</button>
+              <button id=\"modal-reservar-si\" class=\"btn-confirmar text-white font-semibold px-6 py-2 text-sm rounded-lg modal-btn bg-green-600 hover:bg-green-700\" style=\"min-width:110px;\">Sí</button>
             </div>
           </div>
-          `;
+        </div>
+      `;
       document.body.appendChild(modal);
     } else {
       modal.style.display = "flex";

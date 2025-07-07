@@ -157,7 +157,7 @@ function handleBranchSelection(branchId) {
   infoPanel.classList.remove("hidden");
   infoPanel.classList.add("flex");
 
-  document.getElementById("branch-name").textContent = branch.name;
+  document.getElementById("branch-name").textContent = branch.name.replace(/^Sucursal\s*/i, "");
   document.getElementById(
     "branch-location"
   ).textContent = `${branch.address}, ${branch.city}`;
@@ -231,7 +231,7 @@ function setupAutocomplete(branches) {
       suggestionsList.classList.remove("hidden");
       matches.forEach((branch) => {
         const li = document.createElement("li");
-        li.textContent = branch.name;
+        li.textContent = branch.name.replace(/^Sucursal\s*/i, "");
         li.className =
           "px-4 py-3 hover:bg-stone-700 cursor-pointer transition duration-200";
 
@@ -256,7 +256,6 @@ function setupAutocomplete(branches) {
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      const value = input.value.toLowerCase().trim();
       const match = branches.find((b) =>
         b.name
           .toLowerCase()

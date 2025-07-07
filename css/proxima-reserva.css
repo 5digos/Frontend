@@ -1,5 +1,6 @@
 :root {
   --color-red-500: oklch(63.7% 0.237 25.331);
+  --color-green-500: #10b981;
   --bg-main: oklch(21.6% 0.006 56.043);
   --bg-accordion: oklch(26.8% 0.007 34.298);
 }
@@ -10,15 +11,24 @@
   background-color: var(--bg-accordion);
 }
 .btn-confirmar {
-  background-color: var(--color-red-500);
+  background-color: var(--color-green-500) !important;
+  color: #fff !important;
+  border: none !important;
+  transition: background 0.2s, filter 0.2s;
 }
 .btn-confirmar:hover:not(:disabled) {
-  filter: brightness(0.7);
+  background-color: #059669 !important;
+  filter: brightness(0.95);
+}
+.btn-confirmar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .btn-cancelar {
   background-color: transparent;
   border: 1px solid var(--color-red-500);
   color: var(--color-red-500);
+  transition: background 0.2s, color 0.2s;
 }
 .btn-cancelar:hover:not(:disabled) {
   background-color: var(--color-red-500);

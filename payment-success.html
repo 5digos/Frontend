@@ -431,12 +431,17 @@
                     } catch (e) {
                         console.error('Error comunicándose con la pestaña principal:', e);
                     }
-                } else if (typeof window.loadPage === 'function') {
-                    window.loadPage('home');
-                } else if (typeof parent.loadPage === 'function') {
-                    parent.loadPage('home');
                 } else {
-                    window.location.hash = 'home';
+                    // Estamos en la misma pestaña o es SPA
+                    if (typeof window.loadPage === 'function') {
+                        window.loadPage('home');
+                    } else if (typeof parent.loadPage === 'function') {
+                        parent.loadPage('home');
+                    } else {
+                        // Fallback: redirigir a la aplicación principal
+                        const baseUrl = window.location.origin + window.location.pathname.replace('/payment-success.html', '/index.html');
+                        window.location.href = `${baseUrl}#home`;
+                    }
                 }
             }
         }

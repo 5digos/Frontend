@@ -216,8 +216,8 @@ async function loadActiveReservation() {
       btn.addEventListener("click", () => downloadDocument(doc.url, doc.docType));
     });
 
-    containerActive.querySelector(p("pickup-office-name")).textContent = resDetail.pickupBranchOfficeName;
-    containerActive.querySelector(p("dropoff-office-name")).textContent = resDetail.dropOffBranchOfficeName;
+    containerActive.querySelector(p("pickup-office-name")).textContent = resDetail.pickupBranchOfficeName.replace(/^Sucursal\s*/i, "");
+    containerActive.querySelector(p("dropoff-office-name")).textContent = resDetail.dropOffBranchOfficeName.replace(/^Sucursal\s*/i, "");
 
     const [pickupInfo, dropoffInfo] = await Promise.all([
       getBranchOfficeById(resDetail.pickupBranchOfficeId),
@@ -300,12 +300,63 @@ async function loadActiveReservation() {
       showRetiredVehicleMessage();
 
       containerButtons.innerHTML = `
-                <div class=" space-y-4">
-                   <button id="return-vehicle-btn" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2 mt-4">
+                <div class="space-y-4">
+                   <!-- Botones de control del vehículo -->
+                   <div class="flex gap-3 mb-4">
+                      <button id="open-vehicle-control-btn" class="flex-1 bg-gray-500 text-gray-300 font-semibold py-4 rounded-lg shadow-lg cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                         <span class="material-icons">lock_open</span>
+                         Abrir
+                      </button>
+                      <button id="close-vehicle-control-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
+                         <span class="material-icons">lock</span>
+                         Cerrar
+                      </button>
+                   </div>
+                   
+                   <!-- Botón de devolver vehículo -->
+                   <button id="return-vehicle-btn" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2">
                       <span class="material-icons">keyboard_return</span>
                       Devolver vehículo
                    </button>
                 </div>`;
+      // Configurar funcionalidad de los botones de control del vehículo
+      const openControlBtn = containerButtons.querySelector("#open-vehicle-control-btn");
+      const closeControlBtn = containerButtons.querySelector("#close-vehicle-control-btn");
+      
+      if (openControlBtn && closeControlBtn) {
+        // Función para alternar entre botones
+        const toggleVehicleControl = (isOpen) => {
+          if (isOpen) {
+            // Vehículo está abierto: deshabilitar "Abrir" y activar "Cerrar"
+            openControlBtn.disabled = true;
+            openControlBtn.className = "flex-1 bg-gray-500 text-gray-300 font-semibold py-4 rounded-lg shadow-lg cursor-not-allowed flex items-center justify-center gap-2";
+            
+            closeControlBtn.disabled = false;
+            closeControlBtn.className = "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2";
+          } else {
+            // Vehículo está cerrado: activar "Abrir" y deshabilitar "Cerrar"
+            openControlBtn.disabled = false;
+            openControlBtn.className = "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2";
+            
+            closeControlBtn.disabled = true;
+            closeControlBtn.className = "flex-1 bg-gray-500 text-gray-300 font-semibold py-4 rounded-lg shadow-lg cursor-not-allowed flex items-center justify-center gap-2";
+          }
+        };
+        
+        // Event listeners para los botones
+        openControlBtn.addEventListener("click", () => {
+          if (!openControlBtn.disabled) {
+            toggleVehicleControl(true); // Abrir vehículo
+          }
+        });
+        
+        closeControlBtn.addEventListener("click", () => {
+          if (!closeControlBtn.disabled) {
+            toggleVehicleControl(false); // Cerrar vehículo
+          }
+        });
+      }
+      
       const returnBtn = containerButtons.querySelector("#return-vehicle-btn");
       if (returnBtn) {
         returnBtn.addEventListener("click", async () => {
@@ -548,9 +599,9 @@ async function loadProximaReserva() {
 
     // Datos de reserva
     containerProxima.querySelector(`#${p("pickup-office-name")}`).textContent =
-      resDetail.pickupBranchOfficeName;
+      resDetail.pickupBranchOfficeName.replace(/^Sucursal\s*/i, "");
     containerProxima.querySelector(`#${p("dropoff-office-name")}`).textContent =
-      resDetail.dropOffBranchOfficeName;
+      resDetail.dropOffBranchOfficeName.replace(/^Sucursal\s*/i, "");
 
     const [pickupInfo, dropoffInfo] = await Promise.all([
       getBranchOfficeById(resDetail.pickupBranchOfficeId),
@@ -626,17 +677,17 @@ async function loadProximaReserva() {
           modal = document.createElement("div");
           modal.id = "modal-confirmar-reserva";
           modal.innerHTML = `
-                      <div class="modal-overlay" style="position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;">
-                        <div class="modal-content" style="background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);">
-                         <button id="modal-close-x" style="position:absolute;top:0.75rem;right:0.75rem;background:transparent;border:none;font-size:1.2rem;color:#ccc;cursor:pointer;transition:color 0.2s, transform 0.2s;">✕</button>
-                          <h2 style="font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:var(--color-red-500,#e53935);">¿Proceder a confirmar la reserva?</h2>
-                          <div style="display:flex;gap:1rem;justify-content:center;">
-                            <button id="modal-reservar-si" class="btn-confirmar text-white font-semibold px-6 py-2 text-sm rounded-lg">Sí</button>
-                            <button id="modal-reservar-no" class="btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg">No</button>
-                          </div>
-                        </div>
-                      </div>
-                      `;
+            <div class=\"modal-overlay\" style=\"position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;\">
+              <div class=\"modal-content\" style=\"background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);font-family:'Inter',Arial,sans-serif;\">
+                <button id=\"modal-close-x\" style=\"position:absolute;top:0.75rem;right:0.75rem;background:transparent;border:none;font-size:1.2rem;color:#ccc;cursor:pointer;transition:color 0.2s, transform 0.2s;\">✕</button>
+                <h2 style=\"font-size:1.1rem;font-weight:400;margin-bottom:1rem;color:#fff;font-family:'Inter',Arial,sans-serif;\">¿Confirmar la reserva?</h2>
+                <div style=\"display:flex;gap:1rem;justify-content:center;margin-top:2rem;flex-direction:row;\">
+                  <button id=\"modal-reservar-no\" class=\"btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg modal-btn\" style=\"min-width:110px;font-family:'Inter',Arial,sans-serif;font-size:1rem;\">No</button>
+                  <button id=\"modal-reservar-si\" class=\"btn-confirmar text-white font-semibold px-6 py-2 text-sm rounded-lg modal-btn bg-green-600 hover:bg-green-700\" style=\"min-width:110px;font-family:'Inter',Arial,sans-serif;font-size:1rem;\">Sí</button>
+                </div>
+              </div>
+            </div>
+          `;
 
           document.body.appendChild(modal);
         } else {
@@ -704,17 +755,18 @@ async function loadProximaReserva() {
           modal = document.createElement("div");
           modal.id = "modal-confirmar-reserva";
           modal.innerHTML = `
-                    <div class="modal-overlay" style="position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;">
-                    <div class="modal-content" style="background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);">
-                         <button id="modal-close-x" style="position:absolute;top:0.75rem;right:0.75rem;background:transparent;border:none;font-size:1.2rem;color:#ccc;cursor:pointer;transition:color 0.2s, transform 0.2s;">✕</button>
-                         <h2 style="font-size:1.2rem;font-weight:bold;margin-bottom:1rem;color:var(--color-red-500,#e53935);">¿Proceder a cancelar la reserva?</h2>
-                         <div style="display:flex;gap:1rem;justify-content:center;">
-                            <button id="modal-reservar-si" class="btn-confirmar text-white font-semibold px-6 py-2 text-sm rounded-lg">Sí</button>
-                            <button id="modal-reservar-no" class="btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg">No</button>
-                       </div>
-                    </div>
-                    </div>
-                    `;
+            <div class=\"modal-overlay\" style=\"position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;\">
+              <div class=\"modal-content\" style=\"background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);font-family:'Inter',Arial,sans-serif;\">
+                <button id=\"modal-close-x\" style=\"position:absolute;top:0.75rem;right:0.75rem;background:transparent;border:none;font-size:1.2rem;color:#ccc;cursor:pointer;transition:color 0.2s, transform 0.2s;\">✕</button>
+                <h2 style=\"font-size:1.1rem;font-weight:400;margin-bottom:1rem;color:#fff !important;font-family:'Inter',Arial,sans-serif;\">¿Cancelar la reserva?</h2>
+                <div style=\"display:flex;gap:1rem;justify-content:center;margin-top:2rem;flex-direction:row;\">
+                  <button id=\"modal-reservar-no\" class=\"btn-cancelar text-white font-semibold px-6 py-2 text-sm rounded-lg modal-btn\" style=\"min-width:110px;font-family:'Inter',Arial,sans-serif;font-size:1rem;\">No</button>
+                  <button id=\"modal-reservar-si\" class=\"btn-confirmar text-white font-semibold px-6 py-2 text-sm rounded-lg modal-btn bg-green-600 hover:bg-green-700\" style=\"min-width:110px;font-family:'Inter',Arial,sans-serif;font-size:1rem;\">Sí</button>
+                </div>
+                <div id=\"modal-cancel-error\" style=\"margin-top:1rem;min-height:1.5em;font-family:'Inter',Arial,sans-serif;font-size:1rem;font-weight:400;\"></div>
+              </div>
+            </div>
+          `;
           document.body.appendChild(modal);
         } else {
           modal.style.display = "flex";
@@ -725,16 +777,17 @@ async function loadProximaReserva() {
         // Botón Sí
         modal.querySelector("#modal-reservar-si").onclick = async function () {
           modal.querySelector("#modal-reservar-si").disabled = true;
-          modal.querySelector("#modal-reservar-si").textContent =
-            "Cancelando...";
+          modal.querySelector("#modal-reservar-si").textContent = "Cancelando...";
           cancelBtn.disabled = true;
           cancelBtn.textContent = "Cancelando...";
+          // Limpiar mensaje de error previo
+          const errorDiv = modal.querySelector('#modal-cancel-error');
+          if (errorDiv) errorDiv.textContent = "";
           try {
             await apiCancelReservation(resDetail.reservationId);
             hideButtons();
             showSpinner();
             setTimeout(async () => {
-              //await refreshAccordions();
               refreshProximaReserva();
               closeModal();
             }, 1000);
@@ -742,6 +795,20 @@ async function loadProximaReserva() {
             console.error("Error cancelando reserva:", error);
             cancelBtn.disabled = false;
             cancelBtn.textContent = "Cancelar Reserva";
+            modal.querySelector("#modal-reservar-si").disabled = false;
+            modal.querySelector("#modal-reservar-si").textContent = "Sí";
+            // Mostrar mensaje de error si es 409 o contiene la frase de las 2 horas
+            let msg = "No se pudo cancelar la reserva. Intenta nuevamente.";
+            if (error && (error.status === 409 || (error.message && error.message.includes("2 horas")))) {
+              msg = "No se puede cancelar la reserva pasadas las 2 horas previas al retiro.";
+            }
+            if (errorDiv) {
+              errorDiv.textContent = msg;
+              errorDiv.style.color = '#e53935';
+              errorDiv.style.fontWeight = '400';
+              errorDiv.style.fontFamily = "'Inter',Arial,sans-serif";
+              errorDiv.style.fontSize = '1rem';
+            }
           }
         };
       });
@@ -924,9 +991,9 @@ async function loadReservationHistory() {
       });
       // Datos de reserva
       wrapper.querySelector(`#${p("pickup-office-name")}`).textContent =
-        resDetail.pickupBranchOfficeName;
+        resDetail.pickupBranchOfficeName.replace(/^Sucursal\s*/i, "");
       wrapper.querySelector(`#${p("dropoff-office-name")}`).textContent =
-        resDetail.dropOffBranchOfficeName;
+        resDetail.dropOffBranchOfficeName.replace(/^Sucursal\s*/i, "");
 
       const [pickupInfo, dropoffInfo] = await Promise.all([
         getBranchOfficeById(resDetail.pickupBranchOfficeId),
@@ -1105,8 +1172,8 @@ function showRetiredVehicleMessage() {
   container.innerHTML = `
        <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center">
         <span class="material-icons text-blue-400 text-3xl mb-2 block">nfc</span>
-        <h2 class="text-blue-400 font-semibold text-lg mb-1">¡Vehículo Abierto!</h2>
-        <p class="text-gray-300 text-sm">Has retirado el vehículo exitosamente. Disfruta tu viaje.</p>
+        <h2 class="text-blue-400 font-semibold text-lg mb-1">¡Ya podes disfrutar de tu vehículo!</h2>
+        <p class="text-gray-300 text-sm">Has retirado el vehículo exitosamente.</p>
       </div>`;
 }
 function showReturnedVehicleMessage() {
@@ -1217,8 +1284,8 @@ async function handleOpenVehicle(reservation) {
     containerMessage.innerHTML = `<!-- Mensaje de progreso -->
       <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center">
         <span class="material-icons text-blue-400 text-3xl mb-2 block">nfc</span>
-        <h2 class="text-blue-400 font-semibold text-lg mb-1">¡Vehículo Abierto!</h2>
-        <p class="text-gray-300 text-sm">Has retirado el vehículo exitosamente. Disfruta tu viaje.</p>
+        <h2 class="text-blue-400 font-semibold text-lg mb-1">¡Ya podes disfrutar de tu vehículo!</h2>
+        <p class="text-gray-300 text-sm">Has retirado el vehículo exitosamente.p>
       </div>`;
 
   try {

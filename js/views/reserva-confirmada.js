@@ -136,8 +136,8 @@ async function loadReservationDetails(reservation) {
     }
 
     // Update reservation info - using the same structure as proxima-reserva.js
-    document.getElementById('pickup-office-name').textContent = reservation.pickupBranchOfficeName || 'N/A';
-    document.getElementById('dropoff-office-name').textContent = reservation.dropOffBranchOfficeName || 'N/A';
+    document.getElementById('pickup-office-name').textContent = (reservation.pickupBranchOfficeName || 'N/A').replace(/^Sucursal\s*/i, "");
+    document.getElementById('dropoff-office-name').textContent = (reservation.dropOffBranchOfficeName || 'N/A').replace(/^Sucursal\s*/i, "");
     
     // populate branch details
     if (pickupOffice) {

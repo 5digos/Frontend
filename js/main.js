@@ -52,6 +52,9 @@ export function initializeApp() {
         // Configurar manejo de hash para navegación
         setupHashNavigation();
         
+        // Configurar listener para mensajes de pago completado
+        setupPaymentMessageListener();
+        
         // Verificar si hay una ruta en el hash al cargar
         const hash = window.location.hash.substring(1); // quitar el #
         console.log('Hash inicial detectado:', hash);
@@ -141,4 +144,83 @@ export function waitForElement(selector, timeout = 3000) {
             reject(new Error(`Elemento ${selector} no apareció en el DOM.`));
         }, timeout);
     });
+}
+
+// Función para configurar listener global de mensajes de pago
+function setupPaymentMessageListener() {
+    console.log('Configurando listener global para mensajes de pago');
+    
+    // Listener para postMessage desde la pestaña de pago
+    window.addEventListener('message', (event) => {
+        console.log('Mensaje recibido en main.js:', event.data);
+        
+        if (event.data && event.data.type === 'PAYMENT_COMPLETED') {
+            console.log('¡Pago completado detectado via postMessage!');
+            
+            // Guardar en localStorage para que lo detecten otras partes de la app
+            localStorage.setItem('completedPayment', JSON.stringify({
+                paymentId: event.data.paymentId,
+                transactionId: event.data.transactionId,
+                status: 'completed',
+                timestamp: Date.now()
+            }));
+            
+            // Manejar las diferentes acciones
+            if (event.data.action === 'navigate_to_activity') {
+                setTimeout(() => {
+                    console.log('Navegando a activity desde main.js');
+                    loadPage('activity');
+                }, 1000);
+            } else if (event.data.action === 'navigate_to_home') {
+                setTimeout(() => {
+                    console.log('Navegando a home desde main.js');
+                    loadPage('home');
+                }, 1000);
+            }
+            
+            // Mostrar notificación si es posible
+            showPaymentNotification();
+        }
+    });
+    
+    // También escuchar cambios en localStorage (fallback)
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'completedPayment' && event.newValue) {
+            console.log('Pago completado detectado via storage en main.js:', event.newValue);
+            showPaymentNotification();
+        }
+    });
+}
+
+// Función para mostrar notificación de pago completado
+function showPaymentNotification() {
+    try {
+        // Crear notificación temporal
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 500;
+        `;
+        notification.innerHTML = '✅ ¡Pago completado exitosamente!';
+        
+        document.body.appendChild(notification);
+        
+        // Remover después de 4 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 4000);
+    } catch (error) {
+        console.log('No se pudo mostrar la notificación:', error);
+    }
 }
