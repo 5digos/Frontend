@@ -6,7 +6,7 @@
     </button>
   </div>
 
-  <form id="reservation-form" class="mx-4 text-stone-800 dark:text-neutral-200">
+  <form id="reservation-form" class="max-w-md mx-auto w-full px-4 text-stone-800 dark:text-neutral-200">
     <!-- campos obligatorios -->
     <section
       class="flex flex-col gap-1 bg-neutral-200 dark:bg-stone-800 p-4 rounded"
@@ -31,22 +31,22 @@
       </div>
 
       <label for="fechaInicio" class="text-xl">Fecha de retiro</label>
-      <div class="flex gap-0 mb-1 border border-neutral-300 rounded-md overflow-hidden bg-neutral-200 dark:bg-stone-800 focus-within:border-red-400">
-        <div class="w-1/2 flex items-center">
+      <div class="grid grid-cols-2 gap-2 mb-1 w-full overflow-x-auto">
+        <div>
           <input
             type="date"
             id="fechaInicio"
             name="fechaInicio"
             required
-            class="text-lg border-0 rounded-none px-3 py-2 focus:outline-none bg-transparent w-full"
+            class="text-base border border-neutral-300 rounded-md px-3 py-2 focus:outline-none bg-neutral-200 dark:bg-stone-800 w-full"
           />
         </div>
-        <div class="w-1/2 flex items-center border-l border-neutral-300">
+        <div>
           <select
             id="horaInicio"
             name="horaInicio"
             required
-            class="w-full border-0 rounded-none px-3 py-2 bg-transparent focus:outline-none appearance-none cursor-pointer text-lg"
+            class="w-full border border-neutral-300 rounded-md px-3 py-2 bg-neutral-200 dark:bg-stone-800 focus:outline-none appearance-none cursor-pointer text-base"
           >
             <option value="" disabled selected>Hora</option>
             <!-- las opciones se llenan por JS -->
@@ -74,22 +74,22 @@
       </div>
 
       <label for="fechaDevolucion" class="text-xl">Fecha de devolución</label>
-      <div class="flex gap-0 mb-1 border border-neutral-300 rounded-md overflow-hidden bg-neutral-200 dark:bg-stone-800 focus-within:border-red-400">
-        <div class="w-1/2 flex items-center">
+      <div class="grid grid-cols-2 gap-2 mb-1 w-full overflow-x-auto">
+        <div>
           <input
             type="date"
             id="fechaDevolucion"
             name="fechaDevolucion"
             required
-            class="text-lg border-0 rounded-none px-3 py-2 focus:outline-none bg-transparent w-full"
+            class="text-base border border-neutral-300 rounded-md px-3 py-2 focus:outline-none bg-neutral-200 dark:bg-stone-800 w-full"
           />
         </div>
-        <div class="w-1/2 flex items-center border-l border-neutral-300">
+        <div>
           <select
             id="horaDevolucion"
             name="horaDevolucion"
             required
-            class="w-full border-0 rounded-none px-3 py-2 bg-transparent focus:outline-none appearance-none cursor-pointer text-lg"
+            class="w-full border border-neutral-300 rounded-md px-3 py-2 bg-neutral-200 dark:bg-stone-800 focus:outline-none appearance-none cursor-pointer text-base"
           >
             <option value="" disabled selected>Hora</option>
             <!-- las opciones se llenan por JS -->
