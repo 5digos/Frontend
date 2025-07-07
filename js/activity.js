@@ -150,11 +150,7 @@ async function loadActiveReservation() {
     return;
   }
   
-  containerActive.classList.add("active");
-  const activeArrow = document.getElementById("active-arrow");
-  if (activeArrow) activeArrow.classList.add("rotated");
-  containerActive.innerHTML = "";
-  containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando reserva activa...</p>`;
+  
 
   const p = (id) => `#active-${id}`;
 
@@ -164,6 +160,8 @@ async function loadActiveReservation() {
       containerActive.innerHTML = `<p class='p-4 text-gray-400 text-sm italic text-center'>No tienes reservas activas.</p>`;
       return;
     }
+
+      
 
     const statusPriority = { Confirmed: 1, InProgress: 2, Completed: 3 };
     const sorted = allReservations
@@ -176,7 +174,13 @@ async function loadActiveReservation() {
     if (!active || active.status === "Pending") {
       containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">No hay reservas activas.</p>`;
       return;
-    }
+      }
+
+      containerActive.classList.add("active");
+      const activeArrow = document.getElementById("active-arrow");
+      if (activeArrow) activeArrow.classList.add("rotated");
+      containerActive.innerHTML = "";
+      containerActive.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando reserva activa...</p>`;
 
     containerActive.innerHTML = reservaTemplate("active");
 
@@ -203,17 +207,18 @@ async function loadActiveReservation() {
     vehicleDetail.documents.forEach((doc) => {
       const div = document.createElement("div");
       div.className =
-        "flex items-center justify-between p-2 document-item rounded-lg transition-colors";
+            "flex items-center justify-between p-2 document-item rounded-lg transition-colors";
+        const btnId = `active-download-${doc.docType}`;
       div.innerHTML = `
                 <span class="text-sm text-gray-200">${doc.docType.toUpperCase()}</span>
-                <button class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
+                <button id="${btnId}" class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                 </button>`;
       docsContainer.appendChild(div);
-      const btn = div.querySelector(".download-btn");
-      btn.addEventListener("click", () => downloadDocument(doc.url, doc.docType));
+        const btn = div.querySelector(`#${btnId}`);
+        btn.addEventListener("click", () => downloadDocument(doc.url, btnId));
     });
 
     containerActive.querySelector(p("pickup-office-name")).textContent = resDetail.pickupBranchOfficeName.replace(/^Sucursal\s*/i, "");
@@ -380,7 +385,7 @@ async function loadActiveReservation() {
             showSpinner();
             setTimeout(() => {
               refreshReservaActiva();
-              refreshHistorialReservas();
+              //refreshHistorialReservas();
             }, 1000);
           } catch (err) {
             console.error("Error devolviendo vehículo:", err);
@@ -516,11 +521,7 @@ async function loadProximaReserva() {
     }
   }
   
-  containerProxima.classList.add("active");
-  const arrow = document.getElementById("proxima-arrow");
-  if (arrow) arrow.classList.add("rotated");
-  containerProxima.innerHTML = "";
-  containerProxima.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando próxima reserva...</p>`;
+  
 
   try {
     const { items: pendings } = await getUserReservations({
@@ -532,7 +533,14 @@ async function loadProximaReserva() {
     }
     const pendingSorted = pendings.sort(
       (a, b) => new Date(a.startTime) - new Date(b.startTime)
-    );
+      );
+
+      containerProxima.classList.add("active");
+      const arrow = document.getElementById("proxima-arrow");
+      if (arrow) arrow.classList.add("rotated");
+      containerProxima.innerHTML = "";
+      containerProxima.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando próxima reserva...</p>`;
+
     const next = pendingSorted[0];
 
     containerProxima.innerHTML = reservaTemplateProxima("proxima");
@@ -571,30 +579,43 @@ async function loadProximaReserva() {
     containerProxima.querySelector(`#${p("vehicle-category")}`).textContent =
       vehicleDetail.vehicle.category.name;
 
+      //const docsContainer = containerActive.querySelector(p("documents-container"));
+      //docsContainer.innerHTML = "";
+      //vehicleDetail.documents.forEach((doc) => {
+      //    const div = document.createElement("div");
+      //    div.className =
+      //        "flex items-center justify-between p-2 document-item rounded-lg transition-colors";
+      //    const btnId = `active-download-${doc.docType}`;
+      //    div.innerHTML = `
+      //          <span class="text-sm text-gray-200">${doc.docType.toUpperCase()}</span>
+      //          <button id="${btnId}" class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
+      //              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      //                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+      //              </svg>
+      //          </button>`;
+      //    docsContainer.appendChild(div);
+      //    const btn = div.querySelector(`#${btnId}`);
+      //    btn.addEventListener("click", () => downloadDocument(doc.url, btnId));
+      //});
+
     // Documentos
-    const docsContainer = containerProxima.querySelector(
-      `#${p("documents-container")}`
-    );
+    const docsContainer = containerProxima.querySelector(`#${p("documents-container")}`);
     docsContainer.innerHTML = ""; // limpio primero
     vehicleDetail.documents.forEach((doc) => {
       const div = document.createElement("div");
       div.className =
-        "flex items-center justify-between p-2 document-item rounded-lg transition-colors";
+            "flex items-center justify-between p-2 document-item rounded-lg transition-colors";
+        const btnId = `proxima-download-${doc.docType}`;
       div.innerHTML = `
                 <span class="text-sm text-gray-200">${doc.docType.toUpperCase()}</span>
-                <button id="download-${
-                  doc.docType
-                }" class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
+                <button id="${btnId}" class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                 </button>`;
       docsContainer.appendChild(div);
-      document
-        .getElementById(`download-${doc.docType}`)
-        .addEventListener("click", () =>
-          downloadDocument(doc.url, doc.docType)
-        );
+        const btn = div.querySelector(`#${btnId}`);
+        btn.addEventListener("click", () => downloadDocument(doc.url, btnId));
     });
 
     // Datos de reserva
@@ -678,7 +699,7 @@ async function loadProximaReserva() {
           modal.id = "modal-confirmar-reserva";
           modal.innerHTML = `
             <div class=\"modal-overlay\" style=\"position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(20,20,20,0.85);display:flex;align-items:center;justify-content:center;\">
-              <div class=\"modal-content\" style=\"background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-red-500,#e53935);font-family:'Inter',Arial,sans-serif;\">
+              <div class=\"modal-content\" style=\"background:var(--bg-main,#18181b);padding:2rem 1.5rem;border-radius:1rem;max-width:90vw;min-width:300px;text-align:center;box-shadow:0 2px 16px #0008;border:1px solid var(--color-green-500,#e53935);font-family:'Inter',Arial,sans-serif;\">
                 <button id=\"modal-close-x\" style=\"position:absolute;top:0.75rem;right:0.75rem;background:transparent;border:none;font-size:1.2rem;color:#ccc;cursor:pointer;transition:color 0.2s, transform 0.2s;\">✕</button>
                 <h2 style=\"font-size:1.1rem;font-weight:400;margin-bottom:1rem;color:#fff;font-family:'Inter',Arial,sans-serif;\">¿Confirmar la reserva?</h2>
                 <div style=\"display:flex;gap:1rem;justify-content:center;margin-top:2rem;flex-direction:row;\">
@@ -876,11 +897,11 @@ async function loadReservationHistory() {
   }
   
   console.log("✅ Contenedor historial encontrado");
-  containerHistorial.classList.add("active");
-  const arrow = document.getElementById("historial-arrow");
-  if (arrow) arrow.classList.add("rotated");
-  containerHistorial.innerHTML = "";
-  containerHistorial.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando historial de reservas...</p>`;
+  //containerHistorial.classList.add("active");
+  //const arrow = document.getElementById("historial-arrow");
+  //if (arrow) arrow.classList.add("rotated");
+  //containerHistorial.innerHTML = "";
+  //containerHistorial.innerHTML = `<p class="p-4 text-gray-400 text-sm italic text-center">Cargando historial de reservas...</p>`;
 
   try {
     const { items: paidReservations } = await getUserReservations({
@@ -897,9 +918,9 @@ async function loadReservationHistory() {
       });
     }
 
-    // TEMPORAL: Para debug, usar todas las reservas que no sean Pending, Confirmed, InProgress
+    // TEMPORAL: Para debug, usar todas las reservas que no sean Pending, Confirmed, InProgress o Completed
     const historialReservations = allReservations?.filter(r => 
-      !["Pending", "Confirmed", "InProgress"].includes(r.status)
+      !["Pending", "Confirmed", "InProgress", "Completed"].includes(r.status)
     ) || [];
 
     if (!historialReservations || historialReservations.length === 0) {
@@ -975,7 +996,7 @@ async function loadReservationHistory() {
           "flex items-center justify-between p-2 document-item rounded-lg transition-colors";
         div.innerHTML = `
             <span class="text-sm text-gray-200">${doc.docType.toUpperCase()}</span>
-            <button id="download-${
+            <button id="${prefix}-download-${
               doc.docType
             }" class="download-btn p-1 text-blue-400 hover:bg-blue-500/20 rounded transition-colors flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -984,9 +1005,9 @@ async function loadReservationHistory() {
             </button>`;
         docsContainer.appendChild(div);
         document
-          .getElementById(`download-${doc.docType}`)
+          .getElementById(`${prefix}-download-${doc.docType}`)
           .addEventListener("click", () =>
-            downloadDocument(doc.url, doc.docType)
+              downloadDocument(doc.url, `${prefix}-download-${doc.docType}`)
           );
       });
       // Datos de reserva
@@ -1106,9 +1127,10 @@ async function loadReservationHistory() {
 
 window.toggleAccordion = toggleAccordion;
 
-function downloadDocument(url, docType) {
-  const container = document.getElementById("documents-container");
-  const btn = document.getElementById(`download-${docType}`);
+export function downloadDocument(url, btnId) {
+  //const container = document.getElementById("documents-container");
+    //const btn = document.getElementById(`download-${docType}`);
+    const btn = document.getElementById(btnId);
   const orig = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = `<div class="spinner border-white"></div>`;
@@ -1228,8 +1250,8 @@ async function refreshProximaReserva() {
   showSpinner();
   try {
     await loadProximaReserva();
-    proximaContent.classList.add("active");
-    if (proximaArrow) proximaArrow.classList.add("rotated");
+    //proximaContent.classList.add("active");
+    //if (proximaArrow) proximaArrow.classList.add("rotated");
   } catch (error) {
     console.error("Error al actualizar la próxima reserva:", error);
   } finally {
@@ -1245,8 +1267,8 @@ async function refreshReservaActiva() {
   try {
     await loadActiveReservation();
     // Expandir el acordeón automáticamente
-    activeContent.classList.add("active");
-    if (activeArrow) activeArrow.classList.add("rotated");
+    //activeContent.classList.add("active");
+    //if (activeArrow) activeArrow.classList.add("rotated");
   } catch (error) {
     console.error("Error al actualizar la reserva activa:", error);
   } finally {
