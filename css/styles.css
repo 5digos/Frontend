@@ -68,3 +68,174 @@
   animation: fadein 0.3s ease, fadeout 0.3s ease 2.7s;
   animation-fill-mode: forwards;
 }
+
+/* Mejoras UX/UI para reservation.html */
+
+/* Inputs y selects: padding y bordes más suaves */
+#reservation-form input[type="date"],
+#reservation-form input[type="number"],
+#reservation-form select {
+  border-radius: 10px;
+  padding-left: 1.2rem;
+  padding-right: 2.5rem;
+  min-height: 44px;
+  box-shadow: 0 1px 4px 0 rgba(0,0,0,0.04);
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+#reservation-form input:focus,
+#reservation-form select:focus {
+  border-color: var(--color-red-500);
+  box-shadow: 0 0 0 2px var(--color-red-500, #ef4444);
+}
+
+/* Mejor alineación de iconos de mapa y calendario */
+#reservation-form .flex.items-center.gap-2 {
+  position: relative;
+}
+#reservation-form .fa-map-location-dot {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  pointer-events: auto;
+  background: transparent;
+  padding: 2px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+#reservation-form .fa-map-location-dot:hover {
+  background: var(--color-red-500, #ef4444);
+  color: #fff !important;
+}
+
+/* Icono de calendario para inputs de fecha */
+#reservation-form input[type="date"] {
+  position: relative;
+  background: transparent;
+  padding-right: 0.75rem !important;
+}
+#reservation-form input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+  margin-right: 0;
+  margin-left: 0;
+  height: 22px;
+  width: 22px;
+  position: absolute;
+  right: 0.5rem;
+}
+#reservation-form input[type="date"] {
+  position: relative;
+  background: transparent;
+  padding-right: 0.75rem !important;
+}
+#reservation-form input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+  margin-right: 0;
+  margin-left: 0;
+  height: 22px;
+  width: 22px;
+  position: absolute;
+  right: 0.5rem;
+}
+@media (max-width: 600px) {
+  #reservation-form input[type="date"] {
+    padding-right: 0.75rem;
+  }
+  #reservation-form input[type="date"]::-webkit-calendar-picker-indicator {
+    right: 0.5rem;
+  }
+}
+
+/* Espaciado entre secciones y campos */
+#reservation-form section {
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+}
+#reservation-form label {
+  margin-bottom: 0.3rem;
+  margin-top: 0.7rem;
+  display: block;
+}
+
+/* Botón buscar: más grande y con transición */
+#reservation-form button[type="submit"] {
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.9rem 0;
+  border-radius: 12px;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
+}
+#reservation-form button[type="submit"]:hover {
+  box-shadow: 0 4px 16px 0 rgba(239,68,68,0.15);
+}
+
+/* Mejora visual de selects con icono */
+#reservation-form select {
+  background-image: url('data:image/svg+xml;utf8,<svg fill="gray" height="18" viewBox="0 0 20 20" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M7.293 7.293a1 1 0 011.414 0L10 8.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2em;
+}
+
+/* Modal: mejora visual */
+#map-modal .bg-white,
+#map-modal .dark\:bg-stone-900 {
+  border-radius: 18px;
+  box-shadow: 0 6px 32px 0 rgba(0,0,0,0.18);
+}
+#map-modal .fa-xmark {
+  transition: color 0.2s;
+}
+#map-modal .fa-xmark:hover {
+  color: var(--color-red-500, #ef4444) !important;
+}
+
+/* Mejor separación entre inputs en mobile */
+@media (max-width: 600px) {
+  #reservation-form .flex.gap-2 {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  #reservation-form .w-2\/3,
+  #reservation-form .w-1\/3,
+  #reservation-form .w-3\/5,
+  #reservation-form .w-2\/5 {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  #reservation-form .fa-map-location-dot {
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  #reservation-form input[type="date"],
+  #reservation-form select,
+  #reservation-form input[type="number"] {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #reservation-form label {
+    margin-top: 0.5rem;
+    margin-bottom: 0.2rem;
+  }
+  #reservation-form section {
+    padding: 1rem 0.5rem;
+  }
+}
+
+#horaInicio,
+#horaDevolucion {
+  color: #ffffff !important;
+}
+
+#horaInicio option,
+#horaDevolucion option {
+  color: #000000 !important;
+}
